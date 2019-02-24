@@ -103,6 +103,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+
+        // For testing, remove when logins are implemented
+        // TODO: Remove
+        startActivity(homePage);
+        finish();
     }
 
     private void populateAutoComplete() {

@@ -10,12 +10,12 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 
-public class popupNotification extends AppCompatActivity {
+public class addEventPopup extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_popup_notification);
+        setContentView(R.layout.activity_add_event_popup);
 
         Button button = findViewById(R.id.button);
         button.setOnClickListener(new View.OnClickListener() {

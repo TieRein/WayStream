@@ -37,6 +37,14 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
+    public static JSONObject getSystemHistory(String system_ID) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "get_system_history");
+        request.put("system_id", system_ID);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
     private static JSONObject makeCall (String query_url, JSONObject request) throws JSONException {
         JSONObject result = new JSONObject();
         try {

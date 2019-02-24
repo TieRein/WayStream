@@ -58,13 +58,14 @@ public class CreateAccountActivity extends AppCompatActivity {
                     // TODO: Check that createAccountButton cant be spammed (with a ton of API calls)
                     // TODO: Implement spinner loading screen while waiting for API return
                     // TODO: Research how to increase timeout from 3000 ms to 5000 ms (causing timeout errors)
-                    //response = server.createAccount(fNameField.getText().toString(), lNameField.getText().toString(), emailField.getText().toString(), usernameField.getText().toString(), passwordField.getText().toString());
-                    response = server.createAccount("Jacob", "Chesley", "tierein@gmail.com", "tierein", "dune2000");
+                    // TODO: Check response from server for errors
+                    response = server.createAccount(fNameField.getText().toString(), lNameField.getText().toString(), emailField.getText().toString(), usernameField.getText().toString(), passwordField.getText().toString());
+                    //response = server.createAccount("Jacob", "Chesley", "tierein@gmail.com", "tierein", "dune2000");
                     if ((int)response.get("statusCode") == 200) {
 
                         // Save login credentials of new account to pass to LoginActivity
-                        mUsername = "tierein";
-                        mPassword = "dune2000";
+                        //mUsername = "tierein";
+                        //mPassword = "dune2000";
                         Intent successPopup = new Intent(getApplicationContext(), popupNotification.class);
 
                         // Creates a dependent child activity forcing this activity to stay alive until the popup is closed

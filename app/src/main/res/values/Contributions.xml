@@ -2,6 +2,8 @@
 <!-- Contributions
 
 popupNotification.java, activity_popup_notification.xml: Code base referenced from Angga Risky - https://www.youtube.com/watch?v=eX-TdY6bLdg
+popupboarder.xml: Code referenced from Anup Cowkur - https://stackoverflow.com/questions/15111402/how-can-i-create-a-border-around-an-android-linearlayout
 ic_add_button.png: https://www.flaticon.com/authors/google	Under license - Creative Commons BY 3.0
+
 -->
 </resources>

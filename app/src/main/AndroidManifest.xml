@@ -14,13 +14,20 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
+        <activity android:name=".CalendarWeekActivity" />
+        <activity
+            android:name=".CalendarActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".HomePageActivity"
             android:label="@string/title_activity_home_page"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:theme="@style/AppTheme.NoActionBar" />
         <activity
             android:name=".popupNotification"
-            android:theme="@style/AppTheme.popupNotification"></activity>
+            android:theme="@style/AppTheme.popupNotification" />
+        <activity
+            android:name=".addEventPopup"
+            android:theme="@style/AppTheme.popupNotification" />
         <activity
             android:name=".CreateAccountActivity"
             android:parentActivityName=".LoginActivity" />
