@@ -43,8 +43,6 @@ import static android.Manifest.permission.READ_CONTACTS;
  * A login screen that offers login via email/username and password.
  */
 public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<Cursor> {
-    public static final String USERNAME = "com.example.waystream.USERNAME";
-    public static final String PASSWORD = "com.example.waystream.PASSWORD";
     /**
      * Id to identity READ_CONTACTS permission request.
      */
@@ -60,7 +58,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
-    private Intent createAccount;
     private Intent homePage;
 
     @Override
@@ -69,7 +66,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         setContentView(R.layout.activity_login);
 
         // Activities are loaded during an asynchronous call so the intents must be preloaded
-        createAccount = new Intent(this, CreateAccountActivity.class);
         homePage = new Intent(this, HomePageActivity.class);
 
         mEmailView = findViewById(R.id.email);
@@ -77,10 +73,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mPasswordView = findViewById(R.id.password);
 
-        // If values are set when creating an account, populate login credentials
-        Intent intent = getIntent();
-        mEmailView.setText(intent.getStringExtra(CreateAccountActivity.USERNAME));
-        mPasswordView.setText(intent.getStringExtra(CreateAccountActivity.PASSWORD));
 
         mPasswordView.setOnEditorActionListener(new TextView.OnEditorActionListener() {
             @Override
@@ -333,8 +325,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
             switch (mReturnCode) {
                 case 200: // Login successful
-                        startActivity(homePage);
-                        finish();
+                    startActivity(homePage);
+                    finish();
                     break;
                 case 401: //Incorrect credentials
                     mPasswordView.setError(getString(R.string.error_incorrect_password));
@@ -342,10 +334,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                     break;
                 case 403: // Account does not exist
                     // Open CreateAccountActivity and prepopulate relevant fields
-                    createAccount.putExtra(USERNAME, mEmail);
-                    createAccount.putExtra(PASSWORD, mPassword);
-                    startActivity(createAccount);
-                    finish();
+                    Intent intent = new Intent(LoginActivity.this, CreateAccountActivity.class);
+                    intent.putExtra("username", mEmail);
+                    intent.putExtra("password", mPassword);
+                    startActivityForResult(intent, 1);
                     break;
                 case -1:
                     // TODO: Should be unreachable, but ensure that it is.
@@ -358,6 +350,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = null;
             showProgress(false);
         }
+    }
+
+    // TODO: Handle potential for results from multiple different activities (needs a switch or something)
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // Loads chosen credentials upon successful account creation
+        mEmailView.setText(data.getStringExtra("username"));
+        mPasswordView.setText(data.getStringExtra("password"));
     }
 }
 

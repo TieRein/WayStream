@@ -10,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 
 public class APICall {
+
     private static final String accessAccountAPI = "https://euh14hwl8h.execute-api.us-west-2.amazonaws.com/accessAccount";
 
     public static JSONObject login(String username, String password) throws JSONException {
@@ -41,6 +42,34 @@ public class APICall {
         JSONObject request = new JSONObject();
         request.put("request_type", "get_system_history");
         request.put("system_id", system_ID);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject getSystemRuntimes(String system_ID) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "get_system_runtime");
+        request.put("system_id", system_ID);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject addNewRuntime(classObject.System_Runtime_Event event) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "add_system_runtime");
+        request.put("system_id", event.system_id);
+        request.put("event_name", event.event_name);
+        request.put("color", event.color);
+        request.put("start_year", event.start_year);
+        request.put("start_month", event.start_month);
+        request.put("start_day", event.start_day);
+        request.put("start_hour", event.start_hour);
+        request.put("start_minute", event.start_minute);
+        request.put("end_year", event.end_year);
+        request.put("end_month", event.end_month);
+        request.put("end_day", event.end_day);
+        request.put("end_hour", event.end_hour);
+        request.put("end_minute", event.end_minute);
 
         return makeCall(accessAccountAPI, request);
     }

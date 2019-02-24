@@ -8,4 +8,13 @@
     <color name="event_color_02">#f57f68</color>
     <color name="event_color_03">#87d288</color>
     <color name="event_color_04">#f8b552</color>
+
+    <color name="Red">#FF0000</color>
+    <color name="Blood_Orange">#EB4E39</color>
+    <color name="Orange">#FFA500</color>
+    <color name="Yellow">#FFFF00</color>
+    <color name="Manila">#F1D592</color>
+    <color name="Green">#008000</color>
+    <color name="Blue">#0000FF</color>
+    <color name="Sky_Blue">#87CEEB</color>
 </resources>

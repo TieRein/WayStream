@@ -13,13 +13,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 public class CreateAccountActivity extends AppCompatActivity {
-    // Variables used to pass back to LoginActivity
-    public static final String USERNAME = "com.example.waystream.USERNAME";
-    public static final String PASSWORD = "com.example.waystream.PASSWORD";
-
-    // TODO: Check to see if this is actually the correct way to pass data, this looks wrong.
-    private String mUsername = null;
-    private String mPassword = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,8 +20,8 @@ public class CreateAccountActivity extends AppCompatActivity {
         setContentView(R.layout.activity_create_account);
 
         Intent intent = getIntent();
-        String username = intent.getStringExtra(LoginActivity.USERNAME);
-        String password = intent.getStringExtra(LoginActivity.PASSWORD);
+        String username = intent.getStringExtra("username");
+        String password = intent.getStringExtra("password");
 
         final TextView fNameField = findViewById(R.id.firstName);
         final TextView lNameField = findViewById(R.id.lastName);
@@ -51,6 +44,7 @@ public class CreateAccountActivity extends AppCompatActivity {
                 StrictMode.setThreadPolicy(policy);
                 APICall server = new APICall();
                 JSONObject response = null;
+
                 try {
                     // TODO: Implement regex check for email
                     // TODO: Implement minimum password security rules
@@ -60,36 +54,18 @@ public class CreateAccountActivity extends AppCompatActivity {
                     // TODO: Research how to increase timeout from 3000 ms to 5000 ms (causing timeout errors)
                     // TODO: Check response from server for errors
                     response = server.createAccount(fNameField.getText().toString(), lNameField.getText().toString(), emailField.getText().toString(), usernameField.getText().toString(), passwordField.getText().toString());
-                    //response = server.createAccount("Jacob", "Chesley", "tierein@gmail.com", "tierein", "dune2000");
                     if ((int)response.get("statusCode") == 200) {
 
-                        // Save login credentials of new account to pass to LoginActivity
-                        //mUsername = "tierein";
-                        //mPassword = "dune2000";
-                        Intent successPopup = new Intent(getApplicationContext(), popupNotification.class);
-
-                        // Creates a dependent child activity forcing this activity to stay alive until the popup is closed
-                        startActivityForResult(successPopup, 1);
+                        Intent endNotification = new Intent();
+                        endNotification.putExtra("username", usernameField.getText().toString());
+                        endNotification.putExtra("password", passwordField.getText().toString());
+                        setResult(Activity.RESULT_OK, endNotification);
+                        finish();
                     }
                 } catch (JSONException e) {
                     // TODO: Handle exception
                 }
             }
         });
-    }
-
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == 1) {
-            if (resultCode == Activity.RESULT_OK) {
-                Intent loginActivity = new Intent(getApplicationContext(), LoginActivity.class);
-
-                // Saves username and password to preload fields in LoginActivity
-                loginActivity.putExtra(LoginActivity.USERNAME, mUsername);
-                loginActivity.putExtra(LoginActivity.PASSWORD, mPassword);
-                startActivity(loginActivity);
-                finish();
-            }
-        }
     }
 }

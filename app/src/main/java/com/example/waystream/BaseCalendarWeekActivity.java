@@ -3,6 +3,7 @@ package com.example.waystream;
 import android.content.Intent;
 import android.graphics.RectF;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.v7.app.AppCompatActivity;
 import android.util.TypedValue;
 import android.view.Menu;
@@ -14,8 +15,12 @@ import com.alamkanak.weekview.MonthLoader;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Locale;
 
 public abstract class BaseCalendarWeekActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener {
@@ -26,12 +31,28 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
     private WeekView mWeekView;
 
+    private HashMap<String, String> colors;
+    private classObject.System_Runtime_Event mEvent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base_calendar_week);
+        mEvent = new classObject().new System_Runtime_Event();
+        // TODO: Not important, but if I have time, I should check if there's a better way then this
+        // To convert the string the user selects into a hex color
+        colors = new HashMap<String, String>();
+        colors.put("Red", "#FF0000");
+        colors.put("Blood_Orange", "#EB4E39");
+        colors.put("Orange", "#FFA500");
+        colors.put("Yellow", "#FFFF00");
+        colors.put("Manila", "#F1D592");
+        colors.put("Green", "#008000");
+        colors.put("Blue", "#0000FF");
+        colors.put("Sky_Blue", "#87CEEB");
+
         Intent intent = getIntent();
+        mEvent.system_id = intent.getStringExtra("system_id");
         Calendar date = Calendar.getInstance();
         int pass_date[];
         pass_date = intent.getIntArrayExtra("pass_date");
@@ -160,10 +181,47 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
 
     @Override
     public void onEmptyViewLongPress(Calendar time) {
-        //Toast.makeText(this, "Empty view long pressed: " + getEventTitle(time), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(BaseCalendarWeekActivity.this, addEventPopup.class);
+        mEvent.start_year = time.get(Calendar.YEAR);
+        mEvent.start_month = time.get(Calendar.MONTH);
+        mEvent.start_day = time.get(Calendar.DAY_OF_MONTH);
+        mEvent.start_hour = time.get(Calendar.HOUR_OF_DAY);
 
-        Intent createEvent = new Intent(getApplicationContext(), addEventPopup.class);
-        // Creates a dependent child activity forcing this activity to stay alive until the popup is closed
-        startActivityForResult(createEvent, 1);
+        intent.putExtra("year", mEvent.start_year);
+        intent.putExtra("month", mEvent.start_month);
+        intent.putExtra("day", mEvent.start_day);
+        intent.putExtra("hour", mEvent.start_hour);
+        startActivityForResult(intent, 1);
+    }
+
+    // TODO: Handle someone clicking out of event window and not clicking Save Event button
+    // TODO: Check if CalendarWeek library can handle a single event that spans between two years
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        mEvent.event_name = data.getStringExtra("event_name");
+        mEvent.color = colors.get(data.getStringExtra("color"));
+        mEvent.start_minute = data.getIntExtra("start_minute", 0);
+        mEvent.end_year = data.getIntExtra("end_year", 0);
+        mEvent.end_month = data.getIntExtra("end_month", 0);
+        mEvent.end_day = data.getIntExtra("end_day", 0);
+        mEvent.end_hour = data.getIntExtra("end_hour", 0);
+        mEvent.end_minute = data.getIntExtra("end_minute", 0);
+
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        APICall server = new APICall();
+        JSONObject response = null;
+
+        try {
+            response = server.addNewRuntime(mEvent);
+            if ((int)response.get("statusCode") == 200) {
+                int i = 0;
+                i++;
+            }
+        } catch (JSONException e) {
+            // TODO: Handle exception
+            int i = 0;
+            i++;
+        }
     }
 }
