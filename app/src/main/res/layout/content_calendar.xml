@@ -8,11 +8,14 @@
     tools:context=".CalendarActivity"
     tools:showIn="@layout/app_bar_calendar">
 
-    <CalendarView
+    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/monthCalendar"
         android:layout_width="0dp"
         android:layout_height="389dp"
         android:layout_marginTop="16dp"
+        app:mcv_showOtherDates="all"
+        app:mcv_selectionColor="#659EC7"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"

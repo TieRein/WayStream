@@ -1,5 +1,6 @@
 package com.example.waystream;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.RectF;
 import android.os.Bundle;
@@ -33,6 +34,8 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
 
     private HashMap<String, String> colors;
     private classObject.System_Runtime_Event mEvent;
+    // To notify the month calendar what the last touched day was
+    private int pass_date[];
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +57,6 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
         Intent intent = getIntent();
         mEvent.system_id = intent.getStringExtra("system_id");
         Calendar date = Calendar.getInstance();
-        int pass_date[];
         pass_date = intent.getIntArrayExtra("pass_date");
         date.set(pass_date[0], pass_date[1], pass_date[2]);
 
@@ -192,6 +194,22 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
         intent.putExtra("day", mEvent.start_day);
         intent.putExtra("hour", mEvent.start_hour);
         startActivityForResult(intent, 1);
+    }
+
+    @Override
+    public void onBackPressed() {
+        Intent endNotification = new Intent();
+
+        endNotification.putExtra("clicked_year", pass_date[0]);
+        endNotification.putExtra("clicked_month", pass_date[1]);
+        endNotification.putExtra("clicked_day", pass_date[2]);
+        endNotification.putExtra("start_year", mEvent.start_year);
+        endNotification.putExtra("start_month", mEvent.start_month);
+        endNotification.putExtra("start_day", mEvent.start_day);
+        endNotification.putExtra("color", mEvent.color);
+
+        setResult(Activity.RESULT_OK, endNotification);
+        finish();
     }
 
     // TODO: Handle someone clicking out of event window and not clicking Save Event button
