@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v7.app.ActionBar;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -17,6 +18,7 @@ import android.view.MenuItem;
 import android.widget.Button;
 
 import com.jjoe64.graphview.GraphView;
+import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.series.DataPoint;
 import com.jjoe64.graphview.series.LineGraphSeries;
 
@@ -36,6 +38,7 @@ public class HomePageActivity extends AppCompatActivity
         setContentView(R.layout.activity_home_page);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
 
         mSystemOneButton = findViewById(R.id.system_one_button);
         mSystemTwoButton = findViewById(R.id.system_two_button);
@@ -86,6 +89,10 @@ public class HomePageActivity extends AppCompatActivity
 
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
+
+        GraphView gv = (GraphView) findViewById(R.id.graph);
+        GridLabelRenderer glr = gv.getGridLabelRenderer();
+        glr.setPadding(32); // should allow for 3 digits to fit on screen
     }
 
     public void updateGraph(JSONObject response) throws JSONException {

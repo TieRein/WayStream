@@ -1,4 +1,7 @@
 package com.example.waystream;
+import com.example.waystream.systemData.Event;
+import com.example.waystream.systemData.systemObject;
+
 import org.apache.commons.io.IOUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,22 +57,23 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject addNewRuntime(classObject.System_Runtime_Event event) throws JSONException {
+    public static JSONObject addNewRuntime(String system_id, Event event) throws JSONException {
         JSONObject request = new JSONObject();
         request.put("request_type", "add_system_runtime");
-        request.put("system_id", event.system_id);
+        request.put("system_id", system_id);
+        request.put("event_id", event.event_id);
         request.put("event_name", event.event_name);
         request.put("color", event.color);
-        request.put("start_year", event.start_year);
-        request.put("start_month", event.start_month);
-        request.put("start_day", event.start_day);
-        request.put("start_hour", event.start_hour);
-        request.put("start_minute", event.start_minute);
-        request.put("end_year", event.end_year);
-        request.put("end_month", event.end_month);
-        request.put("end_day", event.end_day);
-        request.put("end_hour", event.end_hour);
-        request.put("end_minute", event.end_minute);
+        request.put("start_year", event.getStart_year());
+        request.put("start_month", event.getStart_month());
+        request.put("start_day", event.getStart_day());
+        request.put("start_hour", event.getStart_hour());
+        request.put("start_minute", event.getStart_minute());
+        request.put("end_year", event.getEnd_year());
+        request.put("end_month", event.getEnd_month());
+        request.put("end_day", event.getEnd_day());
+        request.put("end_hour", event.getEnd_hour());
+        request.put("end_minute", event.getEnd_minute());
 
         return makeCall(accessAccountAPI, request);
     }

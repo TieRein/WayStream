@@ -1,5 +1,6 @@
 package com.example.waystream;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.RectF;
@@ -15,48 +16,75 @@ import com.alamkanak.weekview.DateTimeInterpreter;
 import com.alamkanak.weekview.MonthLoader;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
+import com.alamkanak.weekview.WeekViewLoader;
+import com.example.waystream.systemData.Event;
+import com.example.waystream.systemData.System.BaseSystem;
+import com.example.waystream.systemData.systemObject;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
+
+import static android.graphics.Color.parseColor;
 
 public abstract class BaseCalendarWeekActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener {
 
     private static final int TYPE_DAY_VIEW = 1;
     private static final int TYPE_THREE_DAY_VIEW = 2;
     private static final int TYPE_WEEK_VIEW = 3;
+
+    // Used to differentiate between multiple activities that this activity may wait for
+    private static final int EMPTY_VIEW_LONG_PRESS_ACTIVITY = 1;
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
     private WeekView mWeekView;
 
     private HashMap<String, String> colors;
-    private classObject.System_Runtime_Event mEvent;
+    private systemObject cObject;
     // To notify the month calendar what the last touched day was
     private int pass_date[];
+    private String system_id;
+    private String new_event_event_id;
+    private String new_event_event_name;
+    private String new_event_color;
+    private int new_event_start_year;
+    private int new_event_start_month;
+    private int new_event_start_day;
+    private int new_event_start_hour;
+    private int new_event_start_minute;
+    private int new_event_end_year;
+    private int new_event_end_month;
+    private int new_event_end_day;
+    private int new_event_end_hour;
+    private int new_event_end_minute;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_base_calendar_week);
-        mEvent = new classObject().new System_Runtime_Event();
+        getSupportActionBar().setDisplayShowTitleEnabled(false);
         // TODO: Not important, but if I have time, I should check if there's a better way then this
         // To convert the string the user selects into a hex color
         colors = new HashMap<String, String>();
         colors.put("Red", "#FF0000");
-        colors.put("Blood_Orange", "#EB4E39");
+        colors.put("Blood Orange", "#EB4E39");
         colors.put("Orange", "#FFA500");
         colors.put("Yellow", "#FFFF00");
         colors.put("Manila", "#F1D592");
         colors.put("Green", "#008000");
         colors.put("Blue", "#0000FF");
-        colors.put("Sky_Blue", "#87CEEB");
+        colors.put("Sky Blue", "#87CEEB");
 
         Intent intent = getIntent();
-        mEvent.system_id = intent.getStringExtra("system_id");
         Calendar date = Calendar.getInstance();
+        cObject = intent.getParcelableExtra("cObject");
+        system_id = intent.getStringExtra("system_id");
         pass_date = intent.getIntArrayExtra("pass_date");
         date.set(pass_date[0], pass_date[1], pass_date[2]);
 
@@ -80,8 +108,12 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
         setupDateTimeInterpreter(false);
 
         mWeekView.goToDate(date);
+        mWeekView.setEventTextColor(parseColor("#000000"));
     }
 
+    protected BaseSystem getSystem() {
+        return cObject.getSystem(system_id);
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -92,7 +124,25 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+        String cycle = item.getTitle().toString();
         setupDateTimeInterpreter(id == R.id.action_week_view);
+
+        // Hack to have menu cycle through views instead of static "one day" choice
+        switch (cycle.toLowerCase()) {
+            case "day view":
+                id = R.id.action_day_view;
+                item.setTitle("Week View");
+                break;
+            case "three day view":
+                id = R.id.action_three_day_view;
+                item.setTitle("Day View");
+                break;
+            case "week view":
+                id = R.id.action_week_view;
+                item.setTitle("Three Day View");
+                break;
+        }
+
         switch (id) {
             case R.id.action_today:
                 mWeekView.goToToday();
@@ -184,31 +234,28 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
     @Override
     public void onEmptyViewLongPress(Calendar time) {
         Intent intent = new Intent(BaseCalendarWeekActivity.this, addEventPopup.class);
-        mEvent.start_year = time.get(Calendar.YEAR);
-        mEvent.start_month = time.get(Calendar.MONTH);
-        mEvent.start_day = time.get(Calendar.DAY_OF_MONTH);
-        mEvent.start_hour = time.get(Calendar.HOUR_OF_DAY);
+        new_event_start_year = time.get(Calendar.YEAR);
+        new_event_start_month = time.get(Calendar.MONTH);
+        new_event_start_day = time.get(Calendar.DAY_OF_MONTH);
+        new_event_start_hour = time.get(Calendar.HOUR_OF_DAY);
 
-        intent.putExtra("year", mEvent.start_year);
-        intent.putExtra("month", mEvent.start_month);
-        intent.putExtra("day", mEvent.start_day);
-        intent.putExtra("hour", mEvent.start_hour);
-        startActivityForResult(intent, 1);
+        intent.putExtra("year", new_event_start_year);
+        intent.putExtra("month", new_event_start_month);
+        intent.putExtra("day", new_event_start_day);
+        intent.putExtra("hour", new_event_start_hour);
+        startActivityForResult(intent, EMPTY_VIEW_LONG_PRESS_ACTIVITY);
     }
 
     @Override
     public void onBackPressed() {
         Intent endNotification = new Intent();
 
+        endNotification.putExtra("cObject", cObject);
         endNotification.putExtra("clicked_year", pass_date[0]);
         endNotification.putExtra("clicked_month", pass_date[1]);
         endNotification.putExtra("clicked_day", pass_date[2]);
-        endNotification.putExtra("start_year", mEvent.start_year);
-        endNotification.putExtra("start_month", mEvent.start_month);
-        endNotification.putExtra("start_day", mEvent.start_day);
-        endNotification.putExtra("color", mEvent.color);
-
         setResult(Activity.RESULT_OK, endNotification);
+
         finish();
     }
 
@@ -216,30 +263,33 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
     // TODO: Check if CalendarWeek library can handle a single event that spans between two years
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        mEvent.event_name = data.getStringExtra("event_name");
-        mEvent.color = colors.get(data.getStringExtra("color"));
-        mEvent.start_minute = data.getIntExtra("start_minute", 0);
-        mEvent.end_year = data.getIntExtra("end_year", 0);
-        mEvent.end_month = data.getIntExtra("end_month", 0);
-        mEvent.end_day = data.getIntExtra("end_day", 0);
-        mEvent.end_hour = data.getIntExtra("end_hour", 0);
-        mEvent.end_minute = data.getIntExtra("end_minute", 0);
+        if (requestCode == EMPTY_VIEW_LONG_PRESS_ACTIVITY && resultCode == Activity.RESULT_OK) {
+            new_event_event_id = UUID.randomUUID().toString();
+            new_event_event_name = data.getStringExtra("event_name");
+            new_event_color = colors.get(data.getStringExtra("color"));
+            new_event_start_minute = data.getIntExtra("start_minute", 0);
+            new_event_end_year = data.getIntExtra("end_year", 0);
+            new_event_end_month = data.getIntExtra("end_month", 0);
+            new_event_end_day = data.getIntExtra("end_day", 0);
+            new_event_end_hour = data.getIntExtra("end_hour", 0);
+            new_event_end_minute = data.getIntExtra("end_minute", 0);
 
-        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-        StrictMode.setThreadPolicy(policy);
-        APICall server = new APICall();
-        JSONObject response = null;
-
-        try {
-            response = server.addNewRuntime(mEvent);
-            if ((int)response.get("statusCode") == 200) {
-                int i = 0;
-                i++;
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+            APICall server = new APICall();
+            JSONObject response = null;
+            Event event = new Event(new_event_event_id, new_event_event_name, new_event_color,
+                    new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute,
+                    new_event_end_year, new_event_end_month, new_event_end_day, new_event_end_hour, new_event_end_minute);
+            try {
+                response = server.addNewRuntime(system_id, event);
+                if ((int) response.get("statusCode") == 200) {
+                    cObject.addEvent(system_id, event);
+                    mWeekView.notifyDatasetChanged();
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
             }
-        } catch (JSONException e) {
-            // TODO: Handle exception
-            int i = 0;
-            i++;
         }
     }
 }
