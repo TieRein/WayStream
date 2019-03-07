@@ -8,6 +8,18 @@
     tools:context=".CalendarActivity"
     tools:showIn="@layout/app_bar_calendar">
 
+    <Button
+        android:id="@+id/update_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="16dp"
+        android:text="Update Automated Calendar"
+        app:layout_constraintBottom_toTopOf="@+id/linearLayout2"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
     <com.prolificinteractive.materialcalendarview.MaterialCalendarView xmlns:app="http://schemas.android.com/apk/res-auto"
         android:id="@+id/monthCalendar"
         android:layout_width="0dp"
@@ -34,5 +46,55 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.0" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginEnd="8dp"
+        android:layout_marginBottom="8dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent">
+
+        <EditText
+            android:id="@+id/editText3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@null"
+            android:cursorVisible="false"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:paddingRight="8dp"
+            android:singleLine="true"
+            android:text="Manual"
+            android:textAlignment="textEnd"
+            android:textIsSelectable="false" />
+
+        <Switch
+            android:id="@+id/automation_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:switchMinWidth="50dp" />
+
+        <EditText
+            android:id="@+id/editText4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:background="@null"
+            android:cursorVisible="false"
+            android:ems="10"
+            android:inputType="textPersonName"
+            android:paddingLeft="8dp"
+            android:singleLine="true"
+            android:text="Automatic"
+            android:textAlignment="textStart"
+            android:textIsSelectable="false" />
+    </LinearLayout>
 
 </android.support.constraint.ConstraintLayout>

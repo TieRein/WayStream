@@ -7,9 +7,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 public class APICall {
@@ -82,8 +86,35 @@ public class APICall {
         request.put("end_day", event.getEnd_day());
         request.put("end_hour", event.getEnd_hour());
         request.put("end_minute", event.getEnd_minute());
+        request.put("automated", (event.isAutomated() ? 1 : 0));
 
         return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject removeRuntime(String system_id, String event_id) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "remove_system_runtime");
+        request.put("system_id", system_id);
+        request.put("event_id", event_id);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject updateAutomatedEvents(String location) throws JSONException {
+        JSONObject result = new JSONObject();
+        try {
+            URL url = new URL("https://api.weather.gov/gridpoints/" + location + "/forecast/hourly");
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+
+            InputStream in = new BufferedInputStream(conn.getInputStream());
+            result = new JSONObject(IOUtils.toString(in, "UTF-8"));
+        }
+        catch (IOException e) {
+            e.printStackTrace();
+        }
+        return result;
     }
 
     private static JSONObject makeCall (String query_url, JSONObject request) throws JSONException {

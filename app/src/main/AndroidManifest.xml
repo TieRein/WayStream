@@ -27,10 +27,13 @@
             android:name=".StatusPageActivity"
             android:theme="@style/AppTheme.NoActionBar" />
         <activity
-            android:name=".popupNotification"
+            android:name=".Popups.popupNotification"
             android:theme="@style/AppTheme.popupNotification" />
         <activity
-            android:name=".addEventPopup"
+            android:name=".Popups.addEventPopup"
+            android:theme="@style/AppTheme.popupNotification" />
+        <activity
+            android:name=".Popups.confirmationPopup"
             android:theme="@style/AppTheme.popupNotification" />
         <activity
             android:name=".CreateAccountActivity"

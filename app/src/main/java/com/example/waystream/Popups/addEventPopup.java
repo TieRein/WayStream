@@ -1,4 +1,4 @@
-package com.example.waystream;
+package com.example.waystream.Popups;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -12,6 +12,8 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
+
+import com.example.waystream.R;
 
 import java.util.ArrayList;
 import java.util.Calendar;

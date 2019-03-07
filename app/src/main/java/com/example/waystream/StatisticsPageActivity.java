@@ -29,6 +29,10 @@ import org.json.JSONObject;
 
 public class StatisticsPageActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+
+    // Used to differentiate between multiple activities that this activity may wait for
+    private static final int TOOLBAR_NAVIGATION = 9;
+
     private Button mSystemOneButton;
     private Button mSystemTwoButton;
     private systemObject cObject;
@@ -118,6 +122,17 @@ public class StatisticsPageActivity extends AppCompatActivity
     }
 
     @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case TOOLBAR_NAVIGATION:
+                cObject = data.getParcelableExtra("cObject");
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
     public void onBackPressed() {
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         Intent endNotification = new Intent();
@@ -161,15 +176,17 @@ public class StatisticsPageActivity extends AppCompatActivity
         if (id == R.id.nav_status) {
             Intent intent = new Intent(StatisticsPageActivity.this, StatusPageActivity.class);
             intent.putExtra("cObject", cObject);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_statistics) {
 
         } else if (id == R.id.nav_system) {
-
+            Intent intent = new Intent(StatisticsPageActivity.this, SystemPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_calendar) {
             Intent intent = new Intent(StatisticsPageActivity.this, CalendarActivity.class);
             intent.putExtra("cObject", cObject);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_logout) {

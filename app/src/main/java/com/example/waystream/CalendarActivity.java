@@ -2,6 +2,7 @@ package com.example.waystream;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.os.StrictMode;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -13,7 +14,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.Spinner;
+import android.widget.Switch;
 
 import com.example.waystream.systemData.Event;
 import com.example.waystream.systemData.systemObject;
@@ -23,6 +27,9 @@ import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
@@ -33,6 +40,11 @@ import butterknife.ButterKnife;
 
 public class CalendarActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, AdapterView.OnItemSelectedListener, OnDateSelectedListener {
+
+    // Used to differentiate between multiple activities that this activity may wait for
+    private static final int TOOLBAR_NAVIGATION = 9;
+    private static final int AUTOMATION_TOGGLE = 2;
+    private static final int CALENDAR_WEEK_ACTIVITY = 1;
 
     private Spinner mSystemSpinner;
     private systemObject cObject;
@@ -81,6 +93,27 @@ public class CalendarActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         currentSystemID = cObject.getSystemID(mSystemSpinner.getItemAtPosition(0).toString());
+
+        Switch automation_switch = findViewById(R.id.automation_switch);
+        automation_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked) { // Manual to automatic
+
+                }
+                else { // Automatic to manual
+
+                }
+            }
+        });
+
+        Button update_button = findViewById(R.id.update_button);
+
+        update_button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                updateAutomatedEvents();
+            }
+        });
     }
 
     @Override
@@ -91,12 +124,25 @@ public class CalendarActivity extends AppCompatActivity
         intent.putExtra("cObject", cObject);
         intent.putExtra("system_id", cObject.getSystemID(mSystemSpinner.getSelectedItem().toString()));
         intent.putExtra("pass_date", pass_date);
-        startActivityForResult(intent, 1);
+        startActivityForResult(intent, CALENDAR_WEEK_ACTIVITY);
     }
 
     // Update calendar with any new events that have been created
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case CALENDAR_WEEK_ACTIVITY:
+                break;
+            case AUTOMATION_TOGGLE:
+                if (data.getBooleanExtra("response", false)) {
+                    updateAutomatedEvents();
+                }
+                break;
+            case TOOLBAR_NAVIGATION:
+                break;
+            default:
+                break;
+        }
         cObject = data.getParcelableExtra("cObject");
         updateCalendarDecorator();
         int clicked_year = data.getIntExtra("clicked_year", 0);
@@ -156,15 +202,17 @@ public class CalendarActivity extends AppCompatActivity
         if (id == R.id.nav_status) {
             Intent intent = new Intent(CalendarActivity.this, StatusPageActivity.class);
             intent.putExtra("cObject", cObject);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_statistics) {
             Intent intent = new Intent(CalendarActivity.this, StatisticsPageActivity.class);
             intent.putExtra("cObject", cObject);
-            startActivityForResult(intent, 1);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_system) {
-
+            Intent intent = new Intent(CalendarActivity.this, SystemPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_calendar) {
-            //startActivity(calendarPage);
+
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_logout) {
@@ -174,5 +222,27 @@ public class CalendarActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
+    }
+
+    private void updateAutomatedEvents() {
+        try {
+            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+            StrictMode.setThreadPolicy(policy);
+            APICall server = new APICall();
+            JSONObject response;
+            JSONArray forecast;
+            response = server.updateAutomatedEvents(cObject.getSystem(currentSystemID).noaa_location);
+
+            // TODO: Check return to ensure this is a valid response
+            String parse = response.getString("properties");
+            parse = parse.replace("\\", "");
+            parse = parse.replaceAll("^\"|\"$", "");
+            response = new JSONObject(parse);
+            forecast = response.getJSONArray("periods");
+            int i = 0;
+            i++;
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
     }
 }

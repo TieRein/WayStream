@@ -38,7 +38,7 @@ public class systemObject implements Parcelable {
         }
     }
 
-    public void addSystem(String type, String system_name, String system_id) throws ClassNotFoundException {
+    public void addSystem(String type, String system_name, String system_id, String noaa_location) throws ClassNotFoundException {
         if (System_Count == System_Array_Size)
             expandSystemArray();
 
@@ -54,12 +54,15 @@ public class systemObject implements Parcelable {
         System_Array[System_Count].system_type = type;
         System_Array[System_Count].system_name = system_name;
         System_Array[System_Count].system_id = system_id;
+        System_Array[System_Count].noaa_location = noaa_location;
         System_Count++;
     }
 
     public void addEvent(String system_id, Event event) {
         getSystem(system_id).addEvent(event);
     }
+
+    public void removeEvent(String system_id, String event_id) { getSystem(system_id).removeEvent(event_id); }
 
     public String getSystemID(String name) {
         for (int i = 0; i < System_Count; i++)
@@ -124,6 +127,7 @@ public class systemObject implements Parcelable {
             out.writeString(System_Array[i].system_type);
             out.writeString(System_Array[i].system_name);
             out.writeString(System_Array[i].system_id);
+            out.writeString(System_Array[i].noaa_location);
             out.writeInt(System_Array[i].getEvent_Count());
             for (int ii = 0; ii < System_Array[i].getEvent_Count(); ii++) {
                 event = System_Array[i].getEvent(ii);
@@ -140,6 +144,7 @@ public class systemObject implements Parcelable {
                 out.writeInt(event.getEnd_day());
                 out.writeInt(event.getEnd_hour());
                 out.writeInt(event.getEnd_minute());
+                out.writeInt(event.isAutomated() ? 1 : 0);
             }
         }
     }
@@ -154,13 +159,13 @@ public class systemObject implements Parcelable {
             expandSystemArray();
         Event event = null;
         for (int i = 0; i < temp; i++) {
-            try { addSystem(in.readString(), in.readString(), in.readString()); }
+            try { addSystem(in.readString(), in.readString(), in.readString(), in.readString()); }
             catch (ClassNotFoundException e) { e.printStackTrace(); }
             int array_count = in.readInt();
             for (int ii = 0; ii < array_count; ii++) {
                 event = new Event(in.readString(), in.readString(), in.readString(),
                         in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt(),
-                        in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt());
+                        in.readInt(), in.readInt(), in.readInt(), in.readInt(), in.readInt(), (in.readInt() == 1));
                 System_Array[i].addEvent(event);
             }
         }
@@ -207,7 +212,7 @@ public class systemObject implements Parcelable {
                         JSONArray event;
                         for (int i = 0; i < response.length(); i++) {
                             event = response.getJSONArray(String.valueOf(i));
-                            addSystem(event.getString(1), event.getString(0), event.getString(2));
+                            addSystem(event.getString(1), event.getString(0), event.getString(2), event.getString(3));
                             mEventsTask = new LoadEventsTask(event.getString(2));
                             mEventsTask.execute((Void) null);
                         }
@@ -257,7 +262,7 @@ public class systemObject implements Parcelable {
                             // we do not need to create a new event, only save an old one.
                             Event pass_event = new Event(event.get(1).toString(), event.get(2).toString(), event.get(3).toString(),
                                     (int)event.get(4), (int)event.get(5), (int)event.get(6), (int)event.get(7), (int)event.get(8),
-                                    (int)event.get(9), (int)event.get(10), (int)event.get(11), (int)event.get(12), (int)event.get(13));
+                                    (int)event.get(9), (int)event.get(10), (int)event.get(11), (int)event.get(12), (int)event.get(13), ((int)event.get(14) == 1));
                             addEvent(event.get(0).toString(), pass_event);
                         }
                     }

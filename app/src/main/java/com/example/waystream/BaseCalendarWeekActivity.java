@@ -1,6 +1,5 @@
 package com.example.waystream;
 
-import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.RectF;
@@ -16,7 +15,9 @@ import com.alamkanak.weekview.DateTimeInterpreter;
 import com.alamkanak.weekview.MonthLoader;
 import com.alamkanak.weekview.WeekView;
 import com.alamkanak.weekview.WeekViewEvent;
-import com.alamkanak.weekview.WeekViewLoader;
+import com.example.waystream.Popups.addEventPopup;
+import com.example.waystream.Popups.confirmationPopup;
+import com.example.waystream.Popups.popupNotification;
 import com.example.waystream.systemData.Event;
 import com.example.waystream.systemData.System.BaseSystem;
 import com.example.waystream.systemData.systemObject;
@@ -25,16 +26,16 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 import static android.graphics.Color.parseColor;
 
-public abstract class BaseCalendarWeekActivity extends AppCompatActivity implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener {
+public abstract class BaseCalendarWeekActivity extends AppCompatActivity
+        implements WeekView.EventClickListener, MonthLoader.MonthChangeListener, WeekView.EventLongPressListener, WeekView.EmptyViewLongPressListener {
 
     private static final int TYPE_DAY_VIEW = 1;
     private static final int TYPE_THREE_DAY_VIEW = 2;
@@ -42,6 +43,9 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
 
     // Used to differentiate between multiple activities that this activity may wait for
     private static final int EMPTY_VIEW_LONG_PRESS_ACTIVITY = 1;
+    private static final int REMOVE_EVENT_CONFIRMATION_POPUP = 2;
+
+
     private int mWeekViewType = TYPE_THREE_DAY_VIEW;
     private WeekView mWeekView;
 
@@ -223,12 +227,15 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
 
     @Override
     public void onEventClick(WeekViewEvent event, RectF eventRect) {
-        Toast.makeText(this, "Clicked " + event.getName(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, event.getName(), Toast.LENGTH_SHORT).show();
     }
 
     @Override
     public void onEventLongPress(WeekViewEvent event, RectF eventRect) {
-        Toast.makeText(this, "Long pressed event: " + event.getName(), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(BaseCalendarWeekActivity.this, confirmationPopup.class);
+        intent.putExtra("notification_text", "Do you want to delete " + event.getName() + " from your calendar?");
+        intent.putExtra("event_id", cObject.getSystem(system_id).getEventID(event.getName()));
+        startActivityForResult(intent, REMOVE_EVENT_CONFIRMATION_POPUP);
     }
 
     @Override
@@ -259,36 +266,68 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity impleme
         finish();
     }
 
-    // TODO: Handle someone clicking out of event window and not clicking Save Event button
     // TODO: Check if CalendarWeek library can handle a single event that spans between two years
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        if (requestCode == EMPTY_VIEW_LONG_PRESS_ACTIVITY && resultCode == Activity.RESULT_OK) {
-            new_event_event_id = UUID.randomUUID().toString();
-            new_event_event_name = data.getStringExtra("event_name");
-            new_event_color = colors.get(data.getStringExtra("color"));
-            new_event_start_minute = data.getIntExtra("start_minute", 0);
-            new_event_end_year = data.getIntExtra("end_year", 0);
-            new_event_end_month = data.getIntExtra("end_month", 0);
-            new_event_end_day = data.getIntExtra("end_day", 0);
-            new_event_end_hour = data.getIntExtra("end_hour", 0);
-            new_event_end_minute = data.getIntExtra("end_minute", 0);
-
+        if (resultCode == Activity.RESULT_OK) {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
             APICall server = new APICall();
             JSONObject response = null;
-            Event event = new Event(new_event_event_id, new_event_event_name, new_event_color,
-                    new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute,
-                    new_event_end_year, new_event_end_month, new_event_end_day, new_event_end_hour, new_event_end_minute);
-            try {
-                response = server.addNewRuntime(system_id, event);
-                if ((int) response.get("statusCode") == 200) {
-                    cObject.addEvent(system_id, event);
-                    mWeekView.notifyDatasetChanged();
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
+
+            switch (requestCode) {
+                case EMPTY_VIEW_LONG_PRESS_ACTIVITY:
+                    new_event_event_id = UUID.randomUUID().toString();
+                    new_event_event_name = data.getStringExtra("event_name");
+                    new_event_color = colors.get(data.getStringExtra("color"));
+                    new_event_start_minute = data.getIntExtra("start_minute", 0);
+                    new_event_end_year = data.getIntExtra("end_year", 0);
+                    new_event_end_month = data.getIntExtra("end_month", 0);
+                    new_event_end_day = data.getIntExtra("end_day", 0);
+                    new_event_end_hour = data.getIntExtra("end_hour", 0);
+                    new_event_end_minute = data.getIntExtra("end_minute", 0);
+
+                    // Ensures a unique name is created
+                    if (Objects.equals(new_event_event_name, "")) {
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("MM.dd.YYYY hh:mm");
+                        Calendar start = Calendar.getInstance();
+                        start.set(new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute);
+                        new_event_event_name = "Event " + dateFormat.format(start.getTime());
+                    }
+
+                    Event event = new Event(new_event_event_id, new_event_event_name, new_event_color,
+                            new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute,
+                            new_event_end_year, new_event_end_month, new_event_end_day, new_event_end_hour, new_event_end_minute, false);
+                    try {
+                        response = server.addNewRuntime(system_id, event);
+                        if ((int) response.get("statusCode") == 200) {
+                            cObject.addEvent(system_id, event);
+                            mWeekView.notifyDatasetChanged();
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    break;
+                case REMOVE_EVENT_CONFIRMATION_POPUP:
+                    if (data.getBooleanExtra("response", false)) {
+                        try {
+                            response = server.removeRuntime(system_id, data.getStringExtra("event_id"));
+                            if ((int) response.get("statusCode") == 200) {
+                                cObject.removeEvent(system_id, data.getStringExtra("event_id"));
+                                mWeekView.notifyDatasetChanged();
+                            }
+                            else if ((int) response.get("statusCode") == 409) {
+                                Intent intent = new Intent(BaseCalendarWeekActivity.this, popupNotification.class);
+                                intent.putExtra("popup_notification_text", "The event name must be unique to the system or left empty with a unique start time.");
+                                startActivity(intent);
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                    break;
+                default:
+                    break;
             }
         }
     }

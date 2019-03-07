@@ -15,6 +15,7 @@ public class Event
     private int end_day;
     private int end_hour;
     private int end_minute;
+    private boolean automated = false;
 
     public Event(Event event) {
         event_id = event.event_id;
@@ -30,19 +31,20 @@ public class Event
         end_day = event.end_day;
         end_hour = event.end_hour;
         end_minute = event.end_minute;
+        automated = event.automated;
     }
 
     public Event(String m_event_id, String m_event_name, String m_color,
                  int m_start_year, int m_start_month, int m_start_day, int m_start_hour, int m_start_minute,
-                 int m_end_year, int m_end_month, int m_end_day, int m_end_hour, int m_end_minute) {
+                 int m_end_year, int m_end_month, int m_end_day, int m_end_hour, int m_end_minute, boolean automated) {
         setEvent(m_event_id, m_event_name, m_color,
          m_start_year, m_start_month, m_start_day, m_start_hour, m_start_minute,
-         m_end_year, m_end_month, m_end_day, m_end_hour, m_end_minute);
+         m_end_year, m_end_month, m_end_day, m_end_hour, m_end_minute, automated);
     }
 
     public void setEvent(String m_event_id, String m_event_name, String m_color,
                          int m_start_year, int m_start_month, int m_start_day, int m_start_hour, int m_start_minute,
-                         int m_end_year, int m_end_month, int m_end_day, int m_end_hour, int m_end_minute) {
+                         int m_end_year, int m_end_month, int m_end_day, int m_end_hour, int m_end_minute, boolean m_automated) {
         event_id = m_event_id;
         event_name = m_event_name;
         color = m_color;
@@ -56,6 +58,7 @@ public class Event
         end_day = m_end_day;
         end_hour = m_end_hour;
         end_minute = m_end_minute;
+        automated = m_automated;
     }
 
     public void setEvent(Event event) {
@@ -72,6 +75,7 @@ public class Event
         end_day = event.end_day;
         end_hour = event.end_hour;
         end_minute = event.end_minute;
+        automated = event.automated;
     }
 
     // The metadata is free to edit, but the event itself must be set atomically through setEvent
@@ -85,4 +89,5 @@ public class Event
     public int getEnd_day() { return end_day; }
     public int getEnd_hour() { return end_hour; }
     public int getEnd_minute() { return end_minute; }
+    public boolean isAutomated() { return automated; }
 }

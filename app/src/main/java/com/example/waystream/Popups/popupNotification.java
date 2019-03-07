@@ -1,4 +1,4 @@
-package com.example.waystream;
+package com.example.waystream.Popups;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -9,16 +9,24 @@ import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.TextView;
+
+import com.example.waystream.R;
 
 public class popupNotification extends AppCompatActivity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_popup_notification);
 
-        Button button = findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
+        Intent intent = getIntent();
+        TextView popup_notification_text = findViewById(R.id.popup_notification_text);
+        popup_notification_text.setText(intent.getStringExtra("popup_notification_text"));
+
+        Button ok_button = findViewById(R.id.ok_button);
+        ok_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 Intent endNotification = new Intent();
@@ -30,10 +38,17 @@ public class popupNotification extends AppCompatActivity {
         DisplayMetrics dm = new DisplayMetrics();
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
-        int width = dm.widthPixels;
-        int height = dm.heightPixels;
+        double width = dm.widthPixels * 0.7;
+        double height = dm.heightPixels * 0.25;
 
-        getWindow().setLayout((int)(width * .6), (int)(height * .5));
+        // Minimum size that this popup can display correctly
+        if (width < 700)
+            width = 700;
+        if (height < 300)
+            height = 300;
+
+        //TODO: Throw exception if minimum size is greater then screen size
+        getWindow().setLayout((int)width, (int)(height));
 
         WindowManager.LayoutParams params = getWindow().getAttributes();
         params.gravity = Gravity.CENTER;
