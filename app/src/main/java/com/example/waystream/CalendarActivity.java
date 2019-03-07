@@ -2,9 +2,6 @@ package com.example.waystream;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
-import android.os.AsyncTask;
-import android.os.StrictMode;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -26,9 +23,6 @@ import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
@@ -51,6 +45,10 @@ public class CalendarActivity extends AppCompatActivity
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_calendar);
+
+        Intent intent = getIntent();
+        cObject = intent.getParcelableExtra("cObject");
+
         ButterKnife.bind(this);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -59,19 +57,10 @@ public class CalendarActivity extends AppCompatActivity
         mMonthCalendar.setOnDateChangedListener(this);
         mMonthCalendar.setShowOtherDates(MaterialCalendarView.SHOW_ALL);
         mSystemSpinner = findViewById(R.id.system_calendar_spinner);
-        cObject = new systemObject();
 
         final LocalDate instance = LocalDate.now();
         mMonthCalendar.setSelectedDate(instance);
         mMonthCalendar.addDecorators(oneDayDecorator);
-
-        // TODO: Transition system population to dynamic. This SHOULD NOT be in release.
-        try {
-            cObject.addSystem("Valve", "Blue", "783c7e66-13ac-42a7-bf0e-4eeed6423280");
-            cObject.addSystem("Valve", "Green", "e7e31cee-17fe-41c8-aa65-d8df9334178e");
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
 
         // Populate spinner with systems
         List<String> list = new ArrayList<String>();
@@ -114,7 +103,21 @@ public class CalendarActivity extends AppCompatActivity
         int clicked_month = data.getIntExtra("clicked_month", 0) + 1;
         int clicked_day = data.getIntExtra("clicked_day", 0);
         // Resets the currently highlighted date to the day that was last clicked on this activity
-        mMonthCalendar.setCurrentDate(CalendarDay.from(clicked_year, clicked_month, clicked_day));
+        if (clicked_year != 0)
+            mMonthCalendar.setCurrentDate(CalendarDay.from(clicked_year, clicked_month, clicked_day));
+    }
+
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        Intent endNotification = new Intent();
+        endNotification.putExtra("cObject", cObject);
+        setResult(Activity.RESULT_OK, endNotification);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
     }
 
     // TODO: Check if removing an event will remove the notification on this calendar
@@ -136,10 +139,7 @@ public class CalendarActivity extends AppCompatActivity
 
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
         currentSystemID = cObject.getSystemID(mSystemSpinner.getItemAtPosition(pos).toString());
-        APICall server = new APICall();
-        LoadEventsTask mEventsTask = null;
-        mEventsTask = new LoadEventsTask(currentSystemID);
-        mEventsTask.execute((Void) null);
+        updateCalendarDecorator();
     }
 
     // Required
@@ -153,10 +153,14 @@ public class CalendarActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_home) {
-            // Handle the camera action
+        if (id == R.id.nav_status) {
+            Intent intent = new Intent(CalendarActivity.this, StatusPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, 1);
         } else if (id == R.id.nav_statistics) {
-
+            Intent intent = new Intent(CalendarActivity.this, StatisticsPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, 1);
         } else if (id == R.id.nav_system) {
 
         } else if (id == R.id.nav_calendar) {
@@ -170,55 +174,5 @@ public class CalendarActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    // TODO: Low priority, convert to static
-    public class LoadEventsTask extends AsyncTask<Void, Void, Boolean> {
-        private int mReturnCode = -1;
-
-        private String mSystem_ID;
-        LoadEventsTask(String System_ID) {
-            mSystem_ID = System_ID;
-        }
-
-        @Override
-        protected Boolean doInBackground(Void... params) {
-            try {
-                StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-                StrictMode.setThreadPolicy(policy);
-                APICall server = new APICall();
-                JSONObject response = null;
-                response = server.getSystemRuntimes(mSystem_ID);
-                if ((int)response.get("statusCode") == 200) {
-                    String parse = response.getString("body");
-                    parse = parse.replace("\\", "");
-                    parse = parse.replaceAll("^\"|\"$", "");
-                    response = new JSONObject(parse);
-                    cObject.clearEvents(currentSystemID);
-                    // Only attempt to add events if events exist
-                    if (response.names() != null) {
-                        JSONArray event;
-                        for (int i = 0; i < response.length(); i++) {
-                            event = response.getJSONArray(String.valueOf(i));
-                            // Because the event_id has already been generated,
-                            // we do not need to create a new event, only save an old one.
-                            Event pass_event = new Event(event.get(1).toString(), event.get(2).toString(), event.get(3).toString(),
-                                    (int)event.get(4), (int)event.get(5), (int)event.get(6), (int)event.get(7), (int)event.get(8),
-                                    (int)event.get(9), (int)event.get(10), (int)event.get(11), (int)event.get(12), (int)event.get(13));
-                            cObject.addEvent(event.get(0).toString(), pass_event);
-                        }
-                    }
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            // Return value not utilized, mReturnCode implemented for more granular control
-            return true;
-        }
-
-        @Override
-        protected void onPostExecute(Boolean result) {
-            updateCalendarDecorator();
-        }
     }
 }

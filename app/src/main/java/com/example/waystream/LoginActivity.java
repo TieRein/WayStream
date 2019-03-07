@@ -31,6 +31,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import com.example.waystream.systemData.systemObject;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -58,7 +60,9 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
-    private Intent homePage;
+    private Intent statisticsPage;
+    private Intent statusPage;
+    private systemObject cObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -66,7 +70,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         setContentView(R.layout.activity_login);
 
         // Activities are loaded during an asynchronous call so the intents must be preloaded
-        homePage = new Intent(this, HomePageActivity.class);
+        statisticsPage = new Intent(this, StatisticsPageActivity.class);
+        statusPage = new Intent(this, StatusPageActivity.class);
 
         mEmailView = findViewById(R.id.email);
         populateAutoComplete();
@@ -95,11 +100,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-
-        // For testing, remove when logins are implemented
-        // TODO: Remove
-        startActivity(homePage);
-        finish();
+        // TODO: Remove dev user ID
+        cObject = new systemObject("1");
     }
 
     private void populateAutoComplete() {
@@ -320,12 +322,17 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         @Override
         protected void onPostExecute(final Boolean success) {
+            Intent intent = new Intent(LoginActivity.this, StatusPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivity(intent);
+            finish();
+            /*
             mAuthTask = null;
             showProgress(false);
 
             switch (mReturnCode) {
                 case 200: // Login successful
-                    startActivity(homePage);
+                    startActivity(statusPage);
                     finish();
                     break;
                 case 401: //Incorrect credentials
@@ -342,7 +349,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 case -1:
                     // TODO: Should be unreachable, but ensure that it is.
                     break;
-            }
+            }*/
         }
 
         @Override

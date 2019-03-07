@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".HomePageActivity"
-    tools:showIn="@layout/app_bar_home_page">
+    tools:context=".StatisticsPageActivity"
+    tools:showIn="@layout/app_bar_statistics_page">
 
     <com.jjoe64.graphview.GraphView
         android:id="@+id/graph"

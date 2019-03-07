@@ -1,11 +1,11 @@
 package com.example.waystream;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v7.app.ActionBar;
 import android.view.View;
 import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
@@ -17,6 +17,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 
+import com.example.waystream.systemData.systemObject;
 import com.jjoe64.graphview.GraphView;
 import com.jjoe64.graphview.GridLabelRenderer;
 import com.jjoe64.graphview.series.DataPoint;
@@ -26,34 +27,25 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class HomePageActivity extends AppCompatActivity
+public class StatisticsPageActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     private Button mSystemOneButton;
     private Button mSystemTwoButton;
-    private Intent calendarPage;
+    private systemObject cObject;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_home_page);
+        setContentView(R.layout.activity_statistics_page);
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayShowTitleEnabled(false);
 
+        Intent intent = getIntent();
+        cObject = intent.getParcelableExtra("cObject");
+
         mSystemOneButton = findViewById(R.id.system_one_button);
         mSystemTwoButton = findViewById(R.id.system_two_button);
-        calendarPage = new Intent(this, CalendarActivity.class);
-        JSONObject response;
-
-
-        FloatingActionButton fab = findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Action to add a system to account", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         mSystemOneButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -90,7 +82,7 @@ public class HomePageActivity extends AppCompatActivity
         NavigationView navigationView = findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
 
-        GraphView gv = (GraphView) findViewById(R.id.graph);
+        GraphView gv = findViewById(R.id.graph);
         GridLabelRenderer glr = gv.getGridLabelRenderer();
         glr.setPadding(32); // should allow for 3 digits to fit on screen
     }
@@ -128,6 +120,9 @@ public class HomePageActivity extends AppCompatActivity
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
+        Intent endNotification = new Intent();
+        endNotification.putExtra("cObject", cObject);
+        setResult(Activity.RESULT_OK, endNotification);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -163,14 +158,18 @@ public class HomePageActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.nav_home) {
-            // Handle the camera action
+        if (id == R.id.nav_status) {
+            Intent intent = new Intent(StatisticsPageActivity.this, StatusPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, 1);
         } else if (id == R.id.nav_statistics) {
 
         } else if (id == R.id.nav_system) {
 
         } else if (id == R.id.nav_calendar) {
-            startActivity(calendarPage);
+            Intent intent = new Intent(StatisticsPageActivity.this, CalendarActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, 1);
         } else if (id == R.id.nav_settings) {
 
         } else if (id == R.id.nav_logout) {

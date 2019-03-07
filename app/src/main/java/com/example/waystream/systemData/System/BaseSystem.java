@@ -2,6 +2,8 @@ package com.example.waystream.systemData.System;
 
 import com.example.waystream.systemData.Event;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -63,12 +65,37 @@ public abstract class BaseSystem {
         return event;
     }
 
-    public void clearEvents() {
-        Event_Array_Size = 0;
-        Event_Count = 0;
-        Event_Array = null;
-    }
-
     public Event[] getEvent_Array() { return Event_Array; }
+
     public int getEvent_Count() { return Event_Count; }
+
+    public long getNextEvent() {
+        Calendar calendar = Calendar.getInstance();
+        long current_time = calendar.getTimeInMillis();
+        long closest_time = 0;
+        long check_time = 0;
+        if (Event_Count > 0) {
+            Event closest_event = Event_Array[0];
+            // Zeros out the calendar so seconds and ms arent saved from the first instance
+            calendar.setTimeInMillis(0);
+            calendar.set(closest_event.getStart_year(), closest_event.getStart_month(), closest_event.getStart_day(), closest_event.getStart_hour(), closest_event.getStart_minute());
+            closest_time = calendar.getTimeInMillis() - current_time;
+
+            for (int i = 1; i < Event_Count; i++) {
+                closest_event = Event_Array[i];
+                calendar.set(closest_event.getStart_year(), closest_event.getStart_month(), closest_event.getStart_day(), closest_event.getStart_hour(), closest_event.getStart_minute());
+                check_time = calendar.getTimeInMillis() - current_time;
+                if (check_time > 0) {
+                    if (closest_time < 0)
+                        closest_time = check_time;
+                    else if (check_time < closest_time)
+                        closest_time = check_time;
+                }
+            }
+            if (closest_time <= 0)
+                closest_time = 0;
+        }
+
+        return closest_time;
+    }
 }

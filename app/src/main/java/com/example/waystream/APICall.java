@@ -57,6 +57,14 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
+    public static JSONObject getAccountSystems(String user_ID) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "get_account_systems");
+        request.put("user_id", user_ID);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
     public static JSONObject addNewRuntime(String system_id, Event event) throws JSONException {
         JSONObject request = new JSONObject();
         request.put("request_type", "add_system_runtime");
