@@ -21,7 +21,9 @@ public class CalendarWeekActivity extends BaseCalendarWeekActivity {
         List<WeekViewEvent> event_list = new ArrayList<>();
 
         for (int i = 0; i < count; i++) {
-            if (newYear == events[i].getStart_year() && newMonth - 1 == events[i].getStart_month()) {
+            if (newYear == events[i].getStart_year() &&
+                    newMonth - 1 == events[i].getStart_month() &&
+                    events[i].isAutomated() == system.isAutomated) {
                 Calendar startTime = Calendar.getInstance();
                 startTime.set(Calendar.YEAR, newYear);
                 startTime.set(Calendar.MONTH, newMonth - 1);

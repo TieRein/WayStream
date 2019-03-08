@@ -19,7 +19,9 @@ import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
 
+import com.example.waystream.Popups.confirmationPopup;
 import com.example.waystream.systemData.Event;
+import com.example.waystream.systemData.System.Valve_System;
 import com.example.waystream.systemData.systemObject;
 import com.example.waystream.calendarDecorator.EventDecorator;
 import com.example.waystream.calendarDecorator.OneDayDecorator;
@@ -27,9 +29,6 @@ import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
@@ -47,6 +46,7 @@ public class CalendarActivity extends AppCompatActivity
     private static final int CALENDAR_WEEK_ACTIVITY = 1;
 
     private Spinner mSystemSpinner;
+    private Switch automation_switch;
     private systemObject cObject;
     private final OneDayDecorator oneDayDecorator = new OneDayDecorator();
     private String currentSystemID;
@@ -94,15 +94,19 @@ public class CalendarActivity extends AppCompatActivity
         navigationView.setNavigationItemSelectedListener(this);
         currentSystemID = cObject.getSystemID(mSystemSpinner.getItemAtPosition(0).toString());
 
-        Switch automation_switch = findViewById(R.id.automation_switch);
+        automation_switch = findViewById(R.id.automation_switch);
         automation_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) { // Manual to automatic
-
-                }
-                else { // Automatic to manual
-
-                }
+            if (isChecked) { // Manual to automatic
+                Intent intent = new Intent(CalendarActivity.this, confirmationPopup.class);
+                intent.putExtra("notification_text", "Do you wish to set " +
+                        cObject.getSystem(currentSystemID).system_name + " to automatic control?");
+                startActivityForResult(intent, AUTOMATION_TOGGLE);
+            }
+            else { // Automatic to manual
+                cObject.getSystem(currentSystemID).isAutomated = false;
+                updateCalendarDecorator();
+            }
             }
         });
 
@@ -111,7 +115,7 @@ public class CalendarActivity extends AppCompatActivity
         update_button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                updateAutomatedEvents();
+                ((Valve_System)cObject.getSystem(currentSystemID)).getNOAAForecast();
             }
         });
     }
@@ -132,25 +136,30 @@ public class CalendarActivity extends AppCompatActivity
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
             case CALENDAR_WEEK_ACTIVITY:
+                cObject = data.getParcelableExtra("cObject");
+                updateCalendarDecorator();
+                int clicked_year = data.getIntExtra("clicked_year", 0);
+                int clicked_month = data.getIntExtra("clicked_month", 0) + 1;
+                int clicked_day = data.getIntExtra("clicked_day", 0);
+                // Resets the currently highlighted date to the day that was last clicked on this activity
+                if (clicked_year != 0)
+                    mMonthCalendar.setCurrentDate(CalendarDay.from(clicked_year, clicked_month, clicked_day));
                 break;
             case AUTOMATION_TOGGLE:
                 if (data.getBooleanExtra("response", false)) {
-                    updateAutomatedEvents();
+                    cObject.getSystem(currentSystemID).isAutomated = true;
+                    ((Valve_System)cObject.getSystem(currentSystemID)).getNOAAForecast();
+                    updateCalendarDecorator();
                 }
                 break;
             case TOOLBAR_NAVIGATION:
+                cObject = data.getParcelableExtra("cObject");
+                updateCalendarDecorator();
                 break;
             default:
                 break;
         }
-        cObject = data.getParcelableExtra("cObject");
-        updateCalendarDecorator();
-        int clicked_year = data.getIntExtra("clicked_year", 0);
-        int clicked_month = data.getIntExtra("clicked_month", 0) + 1;
-        int clicked_day = data.getIntExtra("clicked_day", 0);
-        // Resets the currently highlighted date to the day that was last clicked on this activity
-        if (clicked_year != 0)
-            mMonthCalendar.setCurrentDate(CalendarDay.from(clicked_year, clicked_month, clicked_day));
+
     }
 
     @Override
@@ -166,7 +175,6 @@ public class CalendarActivity extends AppCompatActivity
         }
     }
 
-    // TODO: Check if removing an event will remove the notification on this calendar
     public void updateCalendarDecorator() {
         mMonthCalendar.removeDecorators();
         final LocalDate instance = LocalDate.now();
@@ -176,15 +184,18 @@ public class CalendarActivity extends AppCompatActivity
         CalendarDay date;
         Event[] event_array = cObject.getSystemEvents(currentSystemID);
         for (int i = 0; i < cObject.getSystem(currentSystemID).getEvent_Count(); i++) {
-            date = CalendarDay.from(event_array[i].getStart_year(), event_array[i].getStart_month() + 1, event_array[i].getStart_day());
-            dates.add(date);
-            // TODO: Figure out why only the last color is displayed for every dot
-            mMonthCalendar.addDecorator(new EventDecorator(R.color.Red, dates));
+            if (event_array[i].isAutomated() == cObject.getSystem(currentSystemID).isAutomated) {
+                date = CalendarDay.from(event_array[i].getStart_year(), event_array[i].getStart_month() + 1, event_array[i].getStart_day());
+                dates.add(date);
+                // TODO: Figure out why only the last color is displayed for every dot
+                mMonthCalendar.addDecorator(new EventDecorator(R.color.Red, dates));
+            }
         }
     }
 
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
         currentSystemID = cObject.getSystemID(mSystemSpinner.getItemAtPosition(pos).toString());
+        automation_switch.setChecked(cObject.getSystem(currentSystemID).isAutomated);
         updateCalendarDecorator();
     }
 
@@ -222,27 +233,5 @@ public class CalendarActivity extends AppCompatActivity
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
-    }
-
-    private void updateAutomatedEvents() {
-        try {
-            StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-            StrictMode.setThreadPolicy(policy);
-            APICall server = new APICall();
-            JSONObject response;
-            JSONArray forecast;
-            response = server.updateAutomatedEvents(cObject.getSystem(currentSystemID).noaa_location);
-
-            // TODO: Check return to ensure this is a valid response
-            String parse = response.getString("properties");
-            parse = parse.replace("\\", "");
-            parse = parse.replaceAll("^\"|\"$", "");
-            response = new JSONObject(parse);
-            forecast = response.getJSONArray("periods");
-            int i = 0;
-            i++;
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
     }
 }

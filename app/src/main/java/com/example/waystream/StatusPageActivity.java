@@ -28,7 +28,6 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.UUID;
 
 public class StatusPageActivity extends AppCompatActivity
@@ -110,7 +109,7 @@ public class StatusPageActivity extends AppCompatActivity
             systemEntry.addView(system, llp);
 
             final TextView timer = new TextView(this);
-            long time = cObject.getSystem(i).getNextEvent();
+            long time = cObject.getSystem(i).getNextEvent(cObject.getSystem(i).isAutomated);
 
             // System is currently running
             boolean check = false;

@@ -232,25 +232,38 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity
 
     @Override
     public void onEventLongPress(WeekViewEvent event, RectF eventRect) {
-        Intent intent = new Intent(BaseCalendarWeekActivity.this, confirmationPopup.class);
-        intent.putExtra("notification_text", "Do you want to delete " + event.getName() + " from your calendar?");
-        intent.putExtra("event_id", cObject.getSystem(system_id).getEventID(event.getName()));
-        startActivityForResult(intent, REMOVE_EVENT_CONFIRMATION_POPUP);
+        if (!getSystem().isAutomated) {
+            Intent intent = new Intent(BaseCalendarWeekActivity.this, confirmationPopup.class);
+            intent.putExtra("notification_text", "Do you want to delete " + event.getName() + " from your calendar?");
+            intent.putExtra("event_id", cObject.getSystem(system_id).getEventID(event.getName()));
+            startActivityForResult(intent, REMOVE_EVENT_CONFIRMATION_POPUP);
+        }
+        else {
+            Intent intent = new Intent(BaseCalendarWeekActivity.this, confirmationPopup.class);
+            intent.putExtra("notification_text", "Do you want to delete " + event.getName() + " from your calendar?\nYou can only add events by updating this calendar.");
+            intent.putExtra("event_id", cObject.getSystem(system_id).getEventID(event.getName()));
+            startActivityForResult(intent, REMOVE_EVENT_CONFIRMATION_POPUP);
+        }
     }
 
     @Override
     public void onEmptyViewLongPress(Calendar time) {
-        Intent intent = new Intent(BaseCalendarWeekActivity.this, addEventPopup.class);
-        new_event_start_year = time.get(Calendar.YEAR);
-        new_event_start_month = time.get(Calendar.MONTH);
-        new_event_start_day = time.get(Calendar.DAY_OF_MONTH);
-        new_event_start_hour = time.get(Calendar.HOUR_OF_DAY);
+        if (!getSystem().isAutomated) {
+            Intent intent = new Intent(BaseCalendarWeekActivity.this, addEventPopup.class);
+            new_event_start_year = time.get(Calendar.YEAR);
+            new_event_start_month = time.get(Calendar.MONTH);
+            new_event_start_day = time.get(Calendar.DAY_OF_MONTH);
+            new_event_start_hour = time.get(Calendar.HOUR_OF_DAY);
 
-        intent.putExtra("year", new_event_start_year);
-        intent.putExtra("month", new_event_start_month);
-        intent.putExtra("day", new_event_start_day);
-        intent.putExtra("hour", new_event_start_hour);
-        startActivityForResult(intent, EMPTY_VIEW_LONG_PRESS_ACTIVITY);
+            intent.putExtra("year", new_event_start_year);
+            intent.putExtra("month", new_event_start_month);
+            intent.putExtra("day", new_event_start_day);
+            intent.putExtra("hour", new_event_start_hour);
+            startActivityForResult(intent, EMPTY_VIEW_LONG_PRESS_ACTIVITY);
+        }
+        else {
+            Toast.makeText(this, "You can only remove events from the automated calendar", Toast.LENGTH_LONG).show();
+        }
     }
 
     @Override

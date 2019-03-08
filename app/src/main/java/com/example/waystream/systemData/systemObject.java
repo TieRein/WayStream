@@ -128,6 +128,7 @@ public class systemObject implements Parcelable {
             out.writeString(System_Array[i].system_name);
             out.writeString(System_Array[i].system_id);
             out.writeString(System_Array[i].noaa_location);
+            out.writeInt(System_Array[i].isAutomated ? 1 : 0);
             out.writeInt(System_Array[i].getEvent_Count());
             for (int ii = 0; ii < System_Array[i].getEvent_Count(); ii++) {
                 event = System_Array[i].getEvent(ii);
@@ -161,6 +162,7 @@ public class systemObject implements Parcelable {
         for (int i = 0; i < temp; i++) {
             try { addSystem(in.readString(), in.readString(), in.readString(), in.readString()); }
             catch (ClassNotFoundException e) { e.printStackTrace(); }
+            System_Array[i].isAutomated = (in.readInt() == 1);
             int array_count = in.readInt();
             for (int ii = 0; ii < array_count; ii++) {
                 event = new Event(in.readString(), in.readString(), in.readString(),
