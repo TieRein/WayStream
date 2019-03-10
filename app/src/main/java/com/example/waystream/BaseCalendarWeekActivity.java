@@ -307,14 +307,14 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity
                         start.set(new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute);
                         new_event_event_name = "Event " + dateFormat.format(start.getTime());
                     }
-
-                    Event event = new Event(new_event_event_id, new_event_event_name, new_event_color,
+                    Event [] events = new Event[1];
+                    events[0] = new Event(new_event_event_id, new_event_event_name, new_event_color,
                             new_event_start_year, new_event_start_month, new_event_start_day, new_event_start_hour, new_event_start_minute,
                             new_event_end_year, new_event_end_month, new_event_end_day, new_event_end_hour, new_event_end_minute, false);
                     try {
-                        response = server.addNewRuntime(system_id, event);
+                        response = server.addNewRuntimes(system_id, events, 1);
                         if ((int) response.get("statusCode") == 200) {
-                            cObject.addEvent(system_id, event);
+                            cObject.addEvent(system_id, events[0]);
                             mWeekView.notifyDatasetChanged();
                         }
                     } catch (JSONException e) {
@@ -324,9 +324,11 @@ public abstract class BaseCalendarWeekActivity extends AppCompatActivity
                 case REMOVE_EVENT_CONFIRMATION_POPUP:
                     if (data.getBooleanExtra("response", false)) {
                         try {
-                            response = server.removeRuntime(system_id, data.getStringExtra("event_id"));
+                            String [] old_events = new String[1];
+                            old_events[0] = data.getStringExtra("event_id");
+                            response = server.removeRuntimes(system_id, old_events, 1);
                             if ((int) response.get("statusCode") == 200) {
-                                cObject.removeEvent(system_id, data.getStringExtra("event_id"));
+                                cObject.removeEvent(system_id, old_events[0]);
                                 mWeekView.notifyDatasetChanged();
                             }
                             else if ((int) response.get("statusCode") == 409) {

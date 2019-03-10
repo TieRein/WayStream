@@ -29,6 +29,7 @@ import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
 
+import org.json.JSONException;
 import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
@@ -97,16 +98,17 @@ public class CalendarActivity extends AppCompatActivity
         automation_switch = findViewById(R.id.automation_switch);
         automation_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            if (isChecked) { // Manual to automatic
-                Intent intent = new Intent(CalendarActivity.this, confirmationPopup.class);
-                intent.putExtra("notification_text", "Do you wish to set " +
-                        cObject.getSystem(currentSystemID).system_name + " to automatic control?");
-                startActivityForResult(intent, AUTOMATION_TOGGLE);
-            }
-            else { // Automatic to manual
-                cObject.getSystem(currentSystemID).isAutomated = false;
-                updateCalendarDecorator();
-            }
+                if (cObject.getSystem(currentSystemID).isAutomated != isChecked) {
+                    if (isChecked) { // Manual to automatic
+                        Intent intent = new Intent(CalendarActivity.this, confirmationPopup.class);
+                        intent.putExtra("notification_text", "Do you wish to set " +
+                                cObject.getSystem(currentSystemID).system_name + " to automatic control?\n\n* You may need to update the automated calendar the first time.");
+                        startActivityForResult(intent, AUTOMATION_TOGGLE);
+                    } else { // Automatic to manual
+                        cObject.getSystem(currentSystemID).setAutomation(false);
+                        updateCalendarDecorator();
+                    }
+                }
             }
         });
 
@@ -116,6 +118,7 @@ public class CalendarActivity extends AppCompatActivity
             @Override
             public void onClick(View view) {
                 ((Valve_System)cObject.getSystem(currentSystemID)).getNOAAForecast();
+                updateCalendarDecorator();
             }
         });
     }
@@ -146,10 +149,13 @@ public class CalendarActivity extends AppCompatActivity
                     mMonthCalendar.setCurrentDate(CalendarDay.from(clicked_year, clicked_month, clicked_day));
                 break;
             case AUTOMATION_TOGGLE:
-                if (data.getBooleanExtra("response", false)) {
-                    cObject.getSystem(currentSystemID).isAutomated = true;
-                    ((Valve_System)cObject.getSystem(currentSystemID)).getNOAAForecast();
+                boolean is_automated = data.getBooleanExtra("response", false);
+                if (is_automated) {
+                    cObject.getSystem(currentSystemID).setAutomation(true);
                     updateCalendarDecorator();
+                }
+                else {
+                    automation_switch.setChecked(false);
                 }
                 break;
             case TOOLBAR_NAVIGATION:

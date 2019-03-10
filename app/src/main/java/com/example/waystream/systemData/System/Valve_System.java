@@ -3,6 +3,7 @@ package com.example.waystream.systemData.System;
 import android.os.StrictMode;
 
 import com.example.waystream.APICall;
+import com.example.waystream.systemData.Event;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -46,6 +47,13 @@ public class Valve_System extends BaseSystem {
     private void parseForecast(JSONArray forecast) throws JSONException {
         JSONObject time_slice;
         String buffer;
+        // List of old automated events to be removed as they are deprecated
+        String [] old_events = new String[getEvent_Count()];
+        // List of new events to be added, in array to remain atomic
+        Event[] new_events = new Event[FORECAST_HOURS / 24];
+        int old_event_count = 0;
+        int new_event_count = 0;
+        int [] new_day_array_location = new int[7];
         startTime = new Calendar[FORECAST_HOURS];
         endTime = new Calendar[FORECAST_HOURS];
         isDaytime = new boolean[FORECAST_HOURS];
@@ -74,7 +82,8 @@ public class Valve_System extends BaseSystem {
             int dayEndArrayLocation = 0;
             boolean dayWithPrecipitation = false;
             boolean endOfDay = false;
-            for (int i = 0; i < FORECAST_HOURS; i++) {
+            for (int i = 0, ii = 0; i < FORECAST_HOURS; i++, ii++) {
+                new_day_array_location[ii] = i;
                 dailyHigh = temperature[i];
                 dailyLow = temperature[i];
                 dayBeginArrayLocation = i;
@@ -104,23 +113,47 @@ public class Valve_System extends BaseSystem {
                             daysWithoutWater++;
                     }
                     else {
-                        makeEvent(dayBeginArrayLocation, dayEndArrayLocation, dailyHigh, dailyLow, daysWithoutWater);
+                        new_events[new_event_count] = makeEvent(dayBeginArrayLocation, dayEndArrayLocation, dailyHigh, dailyLow, daysWithoutWater);
+                        new_event_count++;
                         daysWithoutWater = 0;
                     }
                 }
-
-
                 endOfDay = false;
             }
+            APICall server = new APICall();
 
-            // TODO: Keep track of last runtime... Why did i want to do this?
+            // Check automated events for any on the same day and remove as they are now deprecated
+            for (int j = 0; j < 7; j++) {
+                for (int jj = 0; jj < getEvent_Count(); jj++) {
+                    if (startTime[new_day_array_location[j]].get(Calendar.YEAR) == getEvent(jj).getStart_year() &&
+                            startTime[new_day_array_location[j]].get(Calendar.MONTH) == getEvent(jj).getStart_month() &&
+                            startTime[new_day_array_location[j]].get(Calendar.DAY_OF_MONTH) == getEvent(jj).getStart_day() &&
+                            getEvent(jj).isAutomated()) {
+                        old_events[old_event_count] = getEvent(jj).event_id;
+                        old_event_count++;
+                    }
+                }
+            }
 
+            if (old_event_count > 0) {
+                server.removeRuntimes(system_id, old_events, old_event_count);
+                // Only remove events locally after removing them from server
+                for (int i = 0; i < old_event_count; i++)
+                    removeEvent(old_events[i]);
+            }
+
+            if (new_event_count > 0) {
+                server.addNewRuntimes(system_id, new_events, new_event_count);
+                // Only add events locally after adding them to server
+                for (int i = 0; i < new_event_count; i++)
+                    addEvent(new_events[i]);
+            }
         } catch (ParseException e) {
             e.printStackTrace();
         }
     }
 
-    private void makeEvent(int dayBeginArrayLocation, int dayEndArrayLocation, int dailyHigh, int dailyLow, int daysWithoutWater) {
+    private Event makeEvent(int dayBeginArrayLocation, int dayEndArrayLocation, int dailyHigh, int dailyLow, int daysWithoutWater) {
         double eventDuration = 5;
         int eventStartTime = 0;
         // Increase duration by 5 minutes for every 10 degrees above 40 in dailyHigh
@@ -152,6 +185,6 @@ public class Valve_System extends BaseSystem {
                 }
             }
         }
-        makeAutomatedEvent(startTime[eventStartTime], eventDuration, isDaytime[eventStartTime]);
+        return makeAutomatedEvent(startTime[eventStartTime], eventDuration, isDaytime[eventStartTime]);
     }
 }

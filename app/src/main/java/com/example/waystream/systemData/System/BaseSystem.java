@@ -1,6 +1,11 @@
 package com.example.waystream.systemData.System;
 
+import android.os.StrictMode;
+
+import com.example.waystream.APICall;
 import com.example.waystream.systemData.Event;
+
+import org.json.JSONException;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -29,16 +34,17 @@ public abstract class BaseSystem {
     }
 
     // TODO: Implement a check to ensure no events overlap
-    public void addEvent(Event event) {
+    public Event addEvent(Event event) {
         if (Event_Count == Event_Array_Size)
             expandEventArray();
 
         Event_Array[Event_Count] = new Event(event);
         Event_Count++;
+        return event;
     }
 
     // TODO: Check if daylight savings time throws this calculation off
-    public void makeAutomatedEvent(Calendar startTime, double eventDuration, boolean isDaytime) {
+    public Event makeAutomatedEvent(Calendar startTime, double eventDuration, boolean isDaytime) {
         // Convert eventDuration from minutes to milliseconds
         eventDuration *= 60000;
 
@@ -62,18 +68,9 @@ public abstract class BaseSystem {
         int end_hour = endTime.get(Calendar.HOUR_OF_DAY);
         int end_minute = endTime.get(Calendar.MINUTE);
 
-        // Ensure no other automated events are running during this day
-        for (int i = 0; i < Event_Count; i++) {
-            if (start_year == Event_Array[i].getStart_year() &&
-                    start_month == Event_Array[i].getStart_month() &&
-                    start_day == Event_Array[i].getStart_day() &&
-                    Event_Array[i].isAutomated()) {
-                removeEvent(Event_Array[i].event_id);
-            }
-        }
-        addEvent(new Event(event_id, event_name, color,
+        return new Event(event_id, event_name, color,
                 start_year, start_month, start_day, start_hour, start_minute,
-                end_year, end_month, end_day, end_hour, end_minute, true));
+                end_year, end_month, end_day, end_hour, end_minute, true);
     }
 
     public void removeEvent(String event_id) {
@@ -117,6 +114,15 @@ public abstract class BaseSystem {
     public Event[] getEvent_Array() { return Event_Array; }
 
     public int getEvent_Count() { return Event_Count; }
+
+    public void setAutomation(boolean automated) {
+        isAutomated = automated;
+        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+        StrictMode.setThreadPolicy(policy);
+        APICall system = new APICall();
+        try { system.setSystemAutomation(system_id, automated); }
+        catch (JSONException e) { e.printStackTrace(); }
+    }
 
     // If returning a positive value: Value is time in milliseconds of when the soonest event
     // will start in the future.

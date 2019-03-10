@@ -3,6 +3,7 @@ import com.example.waystream.systemData.Event;
 import com.example.waystream.systemData.systemObject;
 
 import org.apache.commons.io.IOUtils;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -55,7 +56,7 @@ public class APICall {
 
     public static JSONObject getSystemRuntimes(String system_ID) throws JSONException {
         JSONObject request = new JSONObject();
-        request.put("request_type", "get_system_runtime");
+        request.put("request_type", "get_system_runtimes");
         request.put("system_id", system_ID);
 
         return makeCall(accessAccountAPI, request);
@@ -69,33 +70,58 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject addNewRuntime(String system_id, Event event) throws JSONException {
+    public static JSONObject addNewRuntimes(String system_id, Event[] event, int event_count) throws JSONException {
         JSONObject request = new JSONObject();
-        request.put("request_type", "add_system_runtime");
+        JSONObject jEvent;
+        JSONArray event_array = new JSONArray();
+        request.put("request_type", "add_system_runtimes");
         request.put("system_id", system_id);
-        request.put("event_id", event.event_id);
-        request.put("event_name", event.event_name);
-        request.put("color", event.color);
-        request.put("start_year", event.getStart_year());
-        request.put("start_month", event.getStart_month());
-        request.put("start_day", event.getStart_day());
-        request.put("start_hour", event.getStart_hour());
-        request.put("start_minute", event.getStart_minute());
-        request.put("end_year", event.getEnd_year());
-        request.put("end_month", event.getEnd_month());
-        request.put("end_day", event.getEnd_day());
-        request.put("end_hour", event.getEnd_hour());
-        request.put("end_minute", event.getEnd_minute());
-        request.put("automated", (event.isAutomated() ? 1 : 0));
+        request.put("event_count", event_count);
+        for (int i = 0; i < event_count; i++) {
+            jEvent = new JSONObject();
+            jEvent.put("event_id", event[i].event_id);
+            jEvent.put("event_name", event[i].event_name);
+            jEvent.put("color", event[i].color);
+            jEvent.put("start_year", event[i].getStart_year());
+            jEvent.put("start_month", event[i].getStart_month());
+            jEvent.put("start_day", event[i].getStart_day());
+            jEvent.put("start_hour", event[i].getStart_hour());
+            jEvent.put("start_minute", event[i].getStart_minute());
+            jEvent.put("end_year", event[i].getEnd_year());
+            jEvent.put("end_month", event[i].getEnd_month());
+            jEvent.put("end_day", event[i].getEnd_day());
+            jEvent.put("end_hour", event[i].getEnd_hour());
+            jEvent.put("end_minute", event[i].getEnd_minute());
+            jEvent.put("automated", (event[i].isAutomated() ? 1 : 0));
+            event_array.put(i, jEvent);
+        }
+        request.put("events", event_array);
 
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject removeRuntime(String system_id, String event_id) throws JSONException {
+    public static JSONObject removeRuntimes(String system_id, String [] event_id, int event_count) throws JSONException {
         JSONObject request = new JSONObject();
-        request.put("request_type", "remove_system_runtime");
+        JSONObject jEvent;
+        JSONArray event_array = new JSONArray();
+        request.put("request_type", "remove_system_runtimes");
         request.put("system_id", system_id);
-        request.put("event_id", event_id);
+        request.put("event_count", event_count);
+        for (int i = 0; i < event_count; i++) {
+            jEvent = new JSONObject();
+            jEvent.put("event_id", event_id[i]);
+            event_array.put(i, jEvent);
+        }
+        request.put("events", event_array);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject setSystemAutomation(String system_id, boolean is_automated) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "set_system_automation");
+        request.put("system_id", system_id);
+        request.put("is_automated", is_automated);
 
         return makeCall(accessAccountAPI, request);
     }

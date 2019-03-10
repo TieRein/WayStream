@@ -215,6 +215,8 @@ public class systemObject implements Parcelable {
                         for (int i = 0; i < response.length(); i++) {
                             event = response.getJSONArray(String.valueOf(i));
                             addSystem(event.getString(1), event.getString(0), event.getString(2), event.getString(3));
+                            if (event.getInt(4) == 1)
+                                System_Array[i].isAutomated = true;
                             mEventsTask = new LoadEventsTask(event.getString(2));
                             mEventsTask.execute((Void) null);
                         }

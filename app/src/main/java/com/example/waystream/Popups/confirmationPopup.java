@@ -52,13 +52,13 @@ public class confirmationPopup extends AppCompatActivity {
         getWindowManager().getDefaultDisplay().getMetrics(dm);
 
         double width = dm.widthPixels * 0.7;
-        double height = dm.heightPixels * 0.25;
+        double height = dm.heightPixels * 0.3;
 
         // Minimum size that this popup can display correctly
         if (width < 700)
             width = 700;
-        if (height < 300)
-            height = 300;
+        if (height < 600)
+            height = 600;
 
         //TODO: Throw exception if minimum size is greater then screen size
         getWindow().setLayout((int)width, (int)(height));

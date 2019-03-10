@@ -85,7 +85,6 @@ public class StatusPageActivity extends AppCompatActivity
         LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         LayoutParams llp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         llp.weight = 1;
-        String content;
         for (int i = 0; i < cObject.getSystem_Count(); i++) {
             final String system_name = cObject.getSystem(i).system_name;
             final String system_id = cObject.getSystem(i).system_id;
@@ -97,8 +96,11 @@ public class StatusPageActivity extends AppCompatActivity
             system.setOnLongClickListener(new View.OnLongClickListener() {
                   @Override
                 public boolean onLongClick(View v) {
+                      String builder = "Would you like to run " + system_name + " for 30 minutes?";
+                      if (cObject.getSystem(system_id).isAutomated)
+                          builder += "\nPlease keep in mind this system is set to automated.";
                       Intent intent = new Intent(StatusPageActivity.this, confirmationPopup.class);
-                      intent.putExtra("notification_text", "Would you like to run " + system_name + " for 30 minutes?");
+                      intent.putExtra("notification_text", builder);
                       intent.putExtra("system_id", system_id);
                       startActivityForResult(intent, QUICK_RUN_CONFIRMATION_POPUP);
                     return true;
@@ -191,13 +193,14 @@ public class StatusPageActivity extends AppCompatActivity
                     StrictMode.setThreadPolicy(policy);
                     APICall server = new APICall();
                     JSONObject response;
-                    Event event = new Event(event_id, event_name, event_color,
+                    Event [] events = new Event[1];
+                    events[0] = new Event(event_id, event_name, event_color,
                             start.get(Calendar.YEAR), start.get(Calendar.MONTH), start.get(Calendar.DAY_OF_MONTH), start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE),
-                            end.get(Calendar.YEAR), end.get(Calendar.MONTH), end.get(Calendar.DAY_OF_MONTH), end.get(Calendar.HOUR_OF_DAY), end.get(Calendar.MINUTE), false);
+                            end.get(Calendar.YEAR), end.get(Calendar.MONTH), end.get(Calendar.DAY_OF_MONTH), end.get(Calendar.HOUR_OF_DAY), end.get(Calendar.MINUTE), cObject.getSystem(system_id).isAutomated);
                     try {
-                        response = server.addNewRuntime(system_id, event);
+                        response = server.addNewRuntimes(system_id, events, 1);
                         if ((int) response.get("statusCode") == 200) {
-                            cObject.addEvent(system_id, event);
+                            cObject.addEvent(system_id, events[0]);
                             updateTimers();
                         }
                     } catch (JSONException e) {
