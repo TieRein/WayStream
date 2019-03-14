@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Objects;
 
 public class APICall {
 
@@ -46,26 +47,43 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject getSystemHistory(String system_ID) throws JSONException {
+    public static JSONObject getSystemHistory(String system_id) throws JSONException {
         JSONObject request = new JSONObject();
         request.put("request_type", "get_system_history");
-        request.put("system_id", system_ID);
+        request.put("system_id", system_id);
 
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject getSystemRuntimes(String system_ID) throws JSONException {
+    public static JSONObject getSystemRuntimes(String system_id) throws JSONException {
         JSONObject request = new JSONObject();
         request.put("request_type", "get_system_runtimes");
-        request.put("system_id", system_ID);
+        request.put("system_id", system_id);
 
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject getAccountSystems(String user_ID) throws JSONException {
+    public static JSONObject getAccountSystems(String user_id) throws JSONException {
         JSONObject request = new JSONObject();
         request.put("request_type", "get_account_systems");
-        request.put("user_id", user_ID);
+        request.put("user_id", user_id);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject addSystemToAccount(String user_id, String system_id) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "add_system_to_account");
+        request.put("user_id", user_id);
+        request.put("system_id", system_id);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject removeSystemFromAccount(String system_id) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "remove_system_from_account");
+        request.put("system_id", system_id);
 
         return makeCall(accessAccountAPI, request);
     }
@@ -117,25 +135,59 @@ public class APICall {
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject setSystemAutomation(String system_id, boolean is_automated) throws JSONException {
+    public static JSONObject updateSystemMetadata(String system_id, String name, double latitude, double longitude, int relay_number, boolean is_automated) throws JSONException {
         JSONObject request = new JSONObject();
-        request.put("request_type", "set_system_automation");
+        request.put("request_type", "update_system_metadata");
         request.put("system_id", system_id);
+        request.put("name", name);
+        request.put("latitude", latitude);
+        request.put("longitude", longitude);
+        request.put("relay_number", relay_number);
         request.put("is_automated", is_automated);
 
         return makeCall(accessAccountAPI, request);
     }
 
-    public static JSONObject updateAutomatedEvents(String location) throws JSONException {
+    public static JSONObject getUnattachedSystems() throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "get_unattached_systems");
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject getSystemLinkTimes(String user_id) throws JSONException {
+        JSONObject request = new JSONObject();
+        request.put("request_type", "get_system_link_times");
+        request.put("user_id", user_id);
+
+        return makeCall(accessAccountAPI, request);
+    }
+
+    public static JSONObject updateAutomatedEvents(double latitude, double longitude) throws JSONException {
         JSONObject result = new JSONObject();
+        String error = "";
         try {
-            URL url = new URL("https://api.weather.gov/gridpoints/" + location + "/forecast/hourly");
+            URL url = new URL("https://api.weather.gov/points/" + Double.toString(latitude) + "," + Double.toString(longitude));
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
-
             InputStream in = new BufferedInputStream(conn.getInputStream());
             result = new JSONObject(IOUtils.toString(in, "UTF-8"));
+            error = result.getString("type");
+            if (!Objects.equals(error, "https://api.weather.gov/problems/InvalidPoint")) {
+                result = result.getJSONObject("properties");
+                String location = result.getString("forecastHourly");
+
+                url = new URL(location);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
+                in = new BufferedInputStream(conn.getInputStream());
+                result = new JSONObject(IOUtils.toString(in, "UTF-8"));
+            }
+            else {
+                result = result.getJSONObject("status");
+            }
         }
         catch (IOException e) {
             e.printStackTrace();

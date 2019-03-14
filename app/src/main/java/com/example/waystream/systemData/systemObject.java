@@ -38,7 +38,7 @@ public class systemObject implements Parcelable {
         }
     }
 
-    public void addSystem(String type, String system_name, String system_id, String noaa_location) throws ClassNotFoundException {
+    public void addSystem(String type, String system_name, String system_id, double latitude, double longitude) throws ClassNotFoundException {
         if (System_Count == System_Array_Size)
             expandSystemArray();
 
@@ -54,8 +54,23 @@ public class systemObject implements Parcelable {
         System_Array[System_Count].system_type = type;
         System_Array[System_Count].system_name = system_name;
         System_Array[System_Count].system_id = system_id;
-        System_Array[System_Count].noaa_location = noaa_location;
+        System_Array[System_Count].latitude = latitude;
+        System_Array[System_Count].longitude = longitude;
         System_Count++;
+    }
+
+    public void removeSystem(String system_id) {
+        BaseSystem[] temp_array = new BaseSystem[System_Array_Size];
+        for (int i = 0, j = 0; i < System_Count - 1; i++, j++) {
+            if (Objects.equals(system_id, System_Array[i].system_id)) {
+                j++;
+            }
+            // Edge case for last person
+            if (j != System_Count)
+                temp_array[i] = System_Array[j];
+        }
+        System_Array = temp_array;
+        System_Count--;
     }
 
     public void addEvent(String system_id, Event event) {
@@ -103,12 +118,10 @@ public class systemObject implements Parcelable {
 
     public String getUser_ID() { return User_ID; }
 
-    private boolean loadUser() {
+    private void loadUser() {
         LoadSystemsTask mSystemsTask;
         mSystemsTask = new LoadSystemsTask(User_ID);
         mSystemsTask.execute((Void) null);
-
-        return true;
     }
 
     //************************************************// For parcelable
@@ -127,7 +140,9 @@ public class systemObject implements Parcelable {
             out.writeString(System_Array[i].system_type);
             out.writeString(System_Array[i].system_name);
             out.writeString(System_Array[i].system_id);
-            out.writeString(System_Array[i].noaa_location);
+            out.writeDouble(System_Array[i].latitude);
+            out.writeDouble(System_Array[i].longitude);
+            out.writeInt(System_Array[i].relay_number);
             out.writeInt(System_Array[i].isAutomated ? 1 : 0);
             out.writeInt(System_Array[i].getEvent_Count());
             for (int ii = 0; ii < System_Array[i].getEvent_Count(); ii++) {
@@ -158,10 +173,11 @@ public class systemObject implements Parcelable {
         // Ensure that array can hold all events
         while (temp >= System_Array_Size)
             expandSystemArray();
-        Event event = null;
+        Event event;
         for (int i = 0; i < temp; i++) {
-            try { addSystem(in.readString(), in.readString(), in.readString(), in.readString()); }
+            try { addSystem(in.readString(), in.readString(), in.readString(), in.readDouble(), in.readDouble()); }
             catch (ClassNotFoundException e) { e.printStackTrace(); }
+            System_Array[i].relay_number = (in.readInt());
             System_Array[i].isAutomated = (in.readInt() == 1);
             int array_count = in.readInt();
             for (int ii = 0; ii < array_count; ii++) {
@@ -214,8 +230,10 @@ public class systemObject implements Parcelable {
                         JSONArray event;
                         for (int i = 0; i < response.length(); i++) {
                             event = response.getJSONArray(String.valueOf(i));
-                            addSystem(event.getString(1), event.getString(0), event.getString(2), event.getString(3));
-                            if (event.getInt(4) == 1)
+                            addSystem(event.getString(1), event.getString(0), event.getString(2), event.getDouble(3), event.getDouble(4));
+                            if (event.getString(5) != "null")
+                                System_Array[i].relay_number = event.getInt(5);
+                            if (event.getInt(6) == 1)
                                 System_Array[i].isAutomated = true;
                             mEventsTask = new LoadEventsTask(event.getString(2));
                             mEventsTask.execute((Void) null);

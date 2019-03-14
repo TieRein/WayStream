@@ -6,6 +6,7 @@ import com.example.waystream.APICall;
 import com.example.waystream.systemData.Event;
 
 import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -16,7 +17,9 @@ public abstract class BaseSystem {
     public String system_type;
     public String system_name;
     public String system_id;
-    public String noaa_location;
+    public double latitude = 1000;
+    public double longitude = 1000;
+    public int relay_number = -1;
     public boolean isAutomated;
 
     private int Event_Count = 0;
@@ -115,13 +118,65 @@ public abstract class BaseSystem {
 
     public int getEvent_Count() { return Event_Count; }
 
-    public void setAutomation(boolean automated) {
-        isAutomated = automated;
+    // I know all of these calls are over the top, but default args aren't a thing in Java.
+    // And i'm being lazy...
+    public JSONObject updateSystemMetadata(boolean automated) {
+        return updateSystemMetadataCall(system_name, latitude, longitude, relay_number, automated);
+    }
+
+    public JSONObject updateSystemMetadata(String name, double mLatitude, double mLongitude, String m_relay_number) {
+        int mRelayNumber;
+        if (name.length() == 0)
+            name = system_name;
+        if (m_relay_number.length() == 0)
+            mRelayNumber = relay_number;
+        else
+            mRelayNumber = Integer.parseInt(m_relay_number);
+
+        if (mRelayNumber < 0 || mRelayNumber > 7)
+            mRelayNumber = -1;
+
+        if (mLatitude < -90 || mLatitude > 90 || mLongitude < -180 || mLongitude > 180) {
+            mLatitude = latitude;
+            mLongitude = longitude;
+        }
+        return updateSystemMetadataCall(name, mLatitude, mLongitude, mRelayNumber, isAutomated);
+    }
+
+    public JSONObject updateSystemMetadata(String name, double mLatitude, double mLongitude, String m_relay_number, boolean automated) {
+        int mRelayNumber;
+        if (name.length() == 0)
+            name = system_name;
+        if (m_relay_number.length() == 0)
+            mRelayNumber = relay_number;
+        else
+            mRelayNumber = Integer.parseInt(m_relay_number);
+        if (mLatitude < -90 || mLatitude > 90 || mLongitude < -180 || mLongitude > 180) {
+            mLatitude = latitude;
+            mLongitude = longitude;
+        }
+        return updateSystemMetadataCall(name, mLatitude, mLongitude, mRelayNumber, automated);
+    }
+
+    public JSONObject updateSystemMetadataCall(String name, double mLatitude, double mLongitude, int mRelayNumber, boolean automated) {
         StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
         StrictMode.setThreadPolicy(policy);
         APICall system = new APICall();
-        try { system.setSystemAutomation(system_id, automated); }
-        catch (JSONException e) { e.printStackTrace(); }
+        JSONObject response = null;
+        try {
+            response = system.updateSystemMetadata(system_id, name, mLatitude, mLongitude, mRelayNumber, automated);
+            // TODO: Make this a switch
+            if ((int) response.get("statusCode") == 200) {
+                system_name = name;
+                latitude = mLatitude;
+                longitude = mLongitude;
+                relay_number = mRelayNumber;
+                isAutomated = automated;
+            }
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return response;
     }
 
     // If returning a positive value: Value is time in milliseconds of when the soonest event

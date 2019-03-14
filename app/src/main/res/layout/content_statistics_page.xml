@@ -1,52 +1,100 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:gravity="center_horizontal"
+    android:orientation="vertical"
+    tools:showIn="@layout/app_bar_statistics_page"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".StatisticsPageActivity"
-    tools:showIn="@layout/app_bar_statistics_page">
+    tools:context=".StatisticsPageActivity">
 
-    <com.jjoe64.graphview.GraphView
-        android:id="@+id/graph"
+    <LinearLayout
+        android:id="@+id/statistics_progress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
+        android:visibility="gone" >
+        <ProgressBar
+            android:id="@+id/statistics_progress_bar"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/statistics_progress_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This may take up to 30 seconds if you have not done this in a while."
+            android:layout_marginStart="16dp" />
+
+    </LinearLayout>
+
+    <android.support.constraint.ConstraintLayout
         android:layout_width="match_parent"
-        android:layout_height="200dip"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        android:layout_height="match_parent"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"
+        android:id="@+id/statistics_view">
 
-    <Button
-        android:id="@+id/system_one_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="114dp"
-        android:layout_marginBottom="8dp"
-        android:text="System One"
-        app:layout_constraintBottom_toTopOf="@+id/graph"
-        app:layout_constraintEnd_toStartOf="@+id/system_two_button"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        <Spinner
+            android:id="@+id/system_statistics_spinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="16dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/system_two_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="8dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="8dp"
-        android:layout_marginBottom="8dp"
-        android:text="System Two"
-        app:layout_constraintBottom_toTopOf="@+id/graph"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/system_one_button"
-        app:layout_constraintTop_toTopOf="parent" />
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/past_water_usage_graph"
+            android:layout_width="175dp"
+            android:layout_height="175dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="6dp"
+            app:layout_constraintEnd_toStartOf="@+id/future_water_usage_graph"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/system_statistics_spinner" />
 
-</android.support.constraint.ConstraintLayout>
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/future_water_usage_graph"
+            android:layout_width="175dp"
+            android:layout_height="175dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/past_water_usage_graph"
+            app:layout_constraintTop_toBottomOf="@+id/system_statistics_spinner" />
+
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/systems_connected_to_account_graph"
+            android:layout_width="175dp"
+            android:layout_height="175dp"
+            android:layout_marginStart="32dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="6dp"
+            app:layout_constraintEnd_toStartOf="@+id/current_weather_graph"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/past_water_usage_graph" />
+
+        <com.jjoe64.graphview.GraphView
+            android:id="@+id/current_weather_graph"
+            android:layout_width="175dp"
+            android:layout_height="175dp"
+            android:layout_marginStart="6dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginEnd="32dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@+id/systems_connected_to_account_graph"
+            app:layout_constraintTop_toBottomOf="@+id/future_water_usage_graph" />
+
+    </android.support.constraint.ConstraintLayout>
+</LinearLayout>

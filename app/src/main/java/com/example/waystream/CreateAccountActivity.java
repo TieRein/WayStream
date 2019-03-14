@@ -63,7 +63,7 @@ public class CreateAccountActivity extends AppCompatActivity {
                         finish();
                     }
                 } catch (JSONException e) {
-                    // TODO: Handle exception
+                    e.printStackTrace();
                 }
             }
         });

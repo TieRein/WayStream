@@ -12,6 +12,7 @@ import org.json.JSONObject;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.HashMap;
 
 public class Valve_System extends BaseSystem {
     private final int FORECAST_HOURS = 156;
@@ -23,14 +24,14 @@ public class Valve_System extends BaseSystem {
     private String [] shortForecast;
     private int daysWithoutWater = 0;
 
-    public void getNOAAForecast() {
+    public JSONArray getNOAAForecast() {
+        JSONArray forecast = null;
         try {
             StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
             StrictMode.setThreadPolicy(policy);
             APICall server = new APICall();
             JSONObject response;
-            JSONArray forecast;
-            response = server.updateAutomatedEvents(noaa_location);
+            response = server.updateAutomatedEvents(latitude, longitude);
 
             // TODO: Check return to ensure this is a valid response
             String parse = response.getString("properties");
@@ -38,22 +39,22 @@ public class Valve_System extends BaseSystem {
             parse = parse.replaceAll("^\"|\"$", "");
             response = new JSONObject(parse);
             forecast = response.getJSONArray("periods");
-            parseForecast(forecast);
         } catch (JSONException e) {
             e.printStackTrace();
         }
+        return forecast;
     }
 
-    private void parseForecast(JSONArray forecast) throws JSONException {
+    public void parseForecast(JSONArray forecast) throws JSONException {
         JSONObject time_slice;
         String buffer;
         // List of old automated events to be removed as they are deprecated
         String [] old_events = new String[getEvent_Count()];
         // List of new events to be added, in array to remain atomic
-        Event[] new_events = new Event[FORECAST_HOURS / 24];
+        Event[] new_events = new Event[FORECAST_HOURS / 24 + 2];
         int old_event_count = 0;
         int new_event_count = 0;
-        int [] new_day_array_location = new int[7];
+        int [] new_day_array_location = new int[8];
         startTime = new Calendar[FORECAST_HOURS];
         endTime = new Calendar[FORECAST_HOURS];
         isDaytime = new boolean[FORECAST_HOURS];
@@ -151,6 +152,48 @@ public class Valve_System extends BaseSystem {
         } catch (ParseException e) {
             e.printStackTrace();
         }
+    }
+
+    public int[][] getForcastTemp(JSONArray forecast) {
+        if (forecast != null) {
+        int [][] data = new int[2][8];
+        JSONObject time_slice;
+        String buffer;
+        startTime = new Calendar[FORECAST_HOURS];
+        temperature = new int[FORECAST_HOURS];
+
+        try {
+            // Parsing the forecast for ease of use
+            for (int i = 0; i < FORECAST_HOURS; i++) {
+                time_slice = forecast.getJSONObject(i);
+                buffer = time_slice.getString("startTime");
+                startTime[i] = Calendar.getInstance();
+                startTime[i].setTime(new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ").parse(buffer));
+                temperature[i] = time_slice.getInt("temperature");
+            }
+
+            boolean endOfDay = false;
+            for (int i = 0, day = 0; i < FORECAST_HOURS; i++, day++) {
+                data[0][day] = temperature[i];
+                data[1][day] = temperature[i];
+                while (!endOfDay && i < FORECAST_HOURS) {
+                    if (temperature[i] > data[0][day])
+                        data[0][day] = temperature[i];
+                    if (temperature[i] < data[1][day])
+                        data[1][day] = temperature[i];
+                    if (startTime[i].get(Calendar.HOUR_OF_DAY) == 23 || i == FORECAST_HOURS - 1) {
+                        endOfDay = true;
+                    } else
+                        i++;
+                }
+                endOfDay = false;
+            }
+        } catch (JSONException | ParseException e) {
+            e.printStackTrace();
+        }
+        return data;
+        }
+        return null;
     }
 
     private Event makeEvent(int dayBeginArrayLocation, int dayEndArrayLocation, int dailyHigh, int dailyLow, int daysWithoutWater) {

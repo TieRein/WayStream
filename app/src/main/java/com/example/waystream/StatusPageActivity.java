@@ -27,7 +27,10 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 public class StatusPageActivity extends AppCompatActivity
@@ -73,7 +76,11 @@ public class StatusPageActivity extends AppCompatActivity
     private void updateTimers() {
         LinearLayout listLayout = findViewById(R.id.systemList);
         listLayout.removeAllViewsInLayout();
+        List<String> list = new ArrayList<String>();
+        for (int i = 0; i < cObject.getSystem_Count(); i++)
+            list.add(cObject.getSystem(i).system_name);
 
+        Collections.sort(list);
         for (int i = 0; i < timerCount; i++) {
             systemTimerList[i].cancel();
         }
@@ -83,11 +90,10 @@ public class StatusPageActivity extends AppCompatActivity
         systemTimerList = new CountDownTimer[cObject.getSystem_Count()];
         systemList = new TextView[cObject.getSystem_Count()];
         LayoutParams lp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        LayoutParams llp = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
-        llp.weight = 1;
+        lp.weight = 1;
         for (int i = 0; i < cObject.getSystem_Count(); i++) {
-            final String system_name = cObject.getSystem(i).system_name;
-            final String system_id = cObject.getSystem(i).system_id;
+            final String system_name = list.get(i);
+            final String system_id = cObject.getSystemID(system_name);
             LinearLayout systemEntry = new LinearLayout(this);
             systemEntry.setWeightSum(2);
             systemEntry.setOrientation(LinearLayout.HORIZONTAL);
@@ -108,10 +114,10 @@ public class StatusPageActivity extends AppCompatActivity
             });
             system.toggle();
             system.setText(system_name);
-            systemEntry.addView(system, llp);
+            systemEntry.addView(system, lp);
 
             final TextView timer = new TextView(this);
-            long time = cObject.getSystem(i).getNextEvent(cObject.getSystem(i).isAutomated);
+            long time = cObject.getSystem(system_id).getNextEvent(cObject.getSystem(system_id).isAutomated);
 
             // System is currently running
             boolean check = false;
@@ -127,7 +133,6 @@ public class StatusPageActivity extends AppCompatActivity
             // Yes, I know it doesn't matter and is computationally a waste, but I have OCD. Sue me...
             if ((time % 1000 == 500 && (time / 1000) % 2 == 1) || time % 1000 > 500)
                 time+= 1000;
-
 
             if (time != 0) {
                 systemTimerList[timerCount] = new CountDownTimer(time, 1000) {
@@ -167,55 +172,55 @@ public class StatusPageActivity extends AppCompatActivity
             else
                 timer.setText("??:??:??");
 
-            systemEntry.addView(timer, llp);
+            systemEntry.addView(timer, lp);
             systemList[i] = timer;
 
-            listLayout.addView(systemEntry, llp);
+            listLayout.addView(systemEntry, lp);
         }
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        switch (requestCode) {
-            case QUICK_RUN_CONFIRMATION_POPUP:
-                if (data.getBooleanExtra("response", false)) {
-                    String system_id = data.getStringExtra("system_id");
-                    SimpleDateFormat dateFormat = new SimpleDateFormat("MM.dd.YYYY hh:mm");
-                    String event_id = UUID.randomUUID().toString();
-                    Calendar start = Calendar.getInstance();
-                    Calendar end = Calendar.getInstance();
-                    end.setTimeInMillis(start.getTimeInMillis() + 1800000);
-                    String event_name = "Quick Run " + dateFormat.format(start.getTime());
-                    String event_color = "#7FFFD4"; // Aquamarine is unique to quick run
+        if (resultCode != Activity.RESULT_CANCELED) {
+            switch (requestCode) {
+                case QUICK_RUN_CONFIRMATION_POPUP:
+                    if (data.getBooleanExtra("response", false)) {
+                        String system_id = data.getStringExtra("system_id");
+                        SimpleDateFormat dateFormat = new SimpleDateFormat("MM.dd.YYYY hh:mm");
+                        String event_id = UUID.randomUUID().toString();
+                        Calendar start = Calendar.getInstance();
+                        Calendar end = Calendar.getInstance();
+                        end.setTimeInMillis(start.getTimeInMillis() + 1800000);
+                        String event_name = "Quick Run " + dateFormat.format(start.getTime());
+                        String event_color = "#7FFFD4"; // Aquamarine is unique to quick run
 
 
-                    StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
-                    StrictMode.setThreadPolicy(policy);
-                    APICall server = new APICall();
-                    JSONObject response;
-                    Event [] events = new Event[1];
-                    events[0] = new Event(event_id, event_name, event_color,
-                            start.get(Calendar.YEAR), start.get(Calendar.MONTH), start.get(Calendar.DAY_OF_MONTH), start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE),
-                            end.get(Calendar.YEAR), end.get(Calendar.MONTH), end.get(Calendar.DAY_OF_MONTH), end.get(Calendar.HOUR_OF_DAY), end.get(Calendar.MINUTE), cObject.getSystem(system_id).isAutomated);
-                    try {
-                        response = server.addNewRuntimes(system_id, events, 1);
-                        if ((int) response.get("statusCode") == 200) {
-                            cObject.addEvent(system_id, events[0]);
-                            updateTimers();
+                        StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+                        StrictMode.setThreadPolicy(policy);
+                        APICall server = new APICall();
+                        JSONObject response;
+                        Event[] events = new Event[1];
+                        events[0] = new Event(event_id, event_name, event_color,
+                                start.get(Calendar.YEAR), start.get(Calendar.MONTH), start.get(Calendar.DAY_OF_MONTH), start.get(Calendar.HOUR_OF_DAY), start.get(Calendar.MINUTE),
+                                end.get(Calendar.YEAR), end.get(Calendar.MONTH), end.get(Calendar.DAY_OF_MONTH), end.get(Calendar.HOUR_OF_DAY), end.get(Calendar.MINUTE), cObject.getSystem(system_id).isAutomated);
+                        try {
+                            response = server.addNewRuntimes(system_id, events, 1);
+                            if ((int) response.get("statusCode") == 200) {
+                                cObject.addEvent(system_id, events[0]);
+                                updateTimers();
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
                         }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
                     }
-                }
-
-
-                break;
-            case TOOLBAR_NAVIGATION:
-                cObject = data.getParcelableExtra("cObject");
-                updateTimers();
-                break;
-            default:
-                break;
+                    break;
+                case TOOLBAR_NAVIGATION:
+                    cObject = data.getParcelableExtra("cObject");
+                    updateTimers();
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -253,7 +258,9 @@ public class StatusPageActivity extends AppCompatActivity
             intent.putExtra("cObject", cObject);
             startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_settings) {
-
+            Intent intent = new Intent(StatusPageActivity.this, SettingsPageActivity.class);
+            intent.putExtra("cObject", cObject);
+            startActivityForResult(intent, TOOLBAR_NAVIGATION);
         } else if (id == R.id.nav_logout) {
 
         }
