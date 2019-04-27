@@ -7,6 +7,7 @@ import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.icu.util.Calendar;
+import android.icu.util.TimeZone;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -43,6 +44,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+
+import static java.lang.Math.abs;
 
 public class StatisticsPageActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener, AdapterView.OnItemSelectedListener {
@@ -104,6 +107,9 @@ public class StatisticsPageActivity extends AppCompatActivity
         mPastWaterUsageGraph = findViewById(R.id.past_water_usage_graph);
         mFutureWaterUsageGraph = findViewById(R.id.future_water_usage_graph);
         mSystemsConnectedToAccountGraph = findViewById(R.id.systems_connected_to_account_graph);
+        mSystemsConnectedToAccountGraph.getViewport().setYAxisBoundsManual(true);
+        mSystemsConnectedToAccountGraph.getViewport().setMinY(0);
+        mSystemsConnectedToAccountGraph.getViewport().setMaxY(8);
         mCurrentWeatherGraph = findViewById(R.id.current_weather_graph);
 
         mPastWaterUsageGraph.setTitle("Past Water Usage");
@@ -124,13 +130,9 @@ public class StatisticsPageActivity extends AppCompatActivity
         mStatisticsView = findViewById(R.id.statistics_view);
         mProgressView = findViewById(R.id.statistics_progress);
 
-        //updateGraph(PAST_WATER);
-        //updateGraph(FUTURE_WATER);
-        //updateGraph(SYSTEMS_CONNECTED);
-        //updateGraph(CURRENT_WEATHER);
-        showProgress(true);
-        mNOAATask = new NOAATemperatureTask(cObject);
-        mNOAATask.execute((Void) null);
+        //showProgress(true);
+        //mNOAATask = new NOAATemperatureTask(cObject);
+        //mNOAATask.execute((Void) null);
     }
 
     public void updateGraph(int graph) {
@@ -148,23 +150,54 @@ public class StatisticsPageActivity extends AppCompatActivity
                         JSONArray run_sequence = response.getJSONArray("0");
                         int first_start_time = (int) run_sequence.get(0);
 
-                        DataPoint[] data = new DataPoint[response.length()];
-                        int total = 0;
-                        for (int i = 0; i < response.length(); i++) {
-                            run_sequence = response.getJSONArray(String.valueOf(i));
-                            total += ((int) run_sequence.get(1) - first_start_time) - ((int) run_sequence.get(0) - first_start_time);
+                        DataPoint[] data = new DataPoint[8];
 
-                            data[i] = new DataPoint(i, total);
-                            //data[i] = new DataPoint((int)run_sequence.get(0) - first_start_time, total);
+                        Calendar calendar = Calendar.getInstance();
+                        calendar.setTimeZone(TimeZone.GMT_ZONE);
+                        calendar.set(Calendar.MILLISECONDS_IN_DAY, 0);
+                        long start_time = (calendar.getTimeInMillis() - 518400000) / 1000; // Seven days in seconds to go back one week into the past
+                        long new_day = start_time;
+                        int day_count = -7;
+                        int i = 0;
+                        long total_run_time = 0;
+                        // Adds total run time up to one week ago as the initial datapoint
+                        run_sequence = response.getJSONArray(String.valueOf(0));
+                        for (; i < response.length() && (int)run_sequence.get(0) < start_time; i++) {
+                            total_run_time += (int)run_sequence.get(1) - (int)run_sequence.get(0);
+                        }
+                        // Add history up to one week ago as first datapoint
+                        data[day_count + 7] = new DataPoint(day_count, total_run_time);
+
+                        for (; i < response.length();) {
+                            run_sequence = response.getJSONArray(String.valueOf(i));
+                            if ((int)run_sequence.get(0) > new_day) {
+                                new_day += 86400; // Move day one more ahead
+                                day_count++;
+                                data[day_count + 7] = new DataPoint(day_count, total_run_time);
+                            } else {
+                                total_run_time += (int)run_sequence.get(1) - (int)run_sequence.get(0);
+                                i++;
+                            }
+                        }
+
+                        data[day_count + 7] = new DataPoint(day_count, total_run_time);
+                        // Ensure graph has 8 datapoints
+                        // May be caused by no new events happening within 24+ hours
+                        for(;day_count <= 0; day_count++) {
+                            data[day_count + 7] = new DataPoint(day_count, total_run_time);
                         }
                         LineGraphSeries<DataPoint> series = new LineGraphSeries<>(data);
+                        mPastWaterUsageGraph.getViewport().setYAxisBoundsManual(true);
+                        mPastWaterUsageGraph.getViewport().setMinY(0);
+                        if (total_run_time < 100) {
+                            mPastWaterUsageGraph.getViewport().setMaxY(100);
+                        }
+                        else {
+                            // Add small buffer above max datapoint
+                            mPastWaterUsageGraph.getViewport().setMaxY(total_run_time + (total_run_time * 0.1));
+                        }
                         mPastWaterUsageGraph.removeAllSeries();
                         mPastWaterUsageGraph.addSeries(series);
-                        mPastWaterUsageGraph.getViewport().setXAxisBoundsManual(true);
-
-                        mPastWaterUsageGraph.getViewport().setMaxX(data.length - 1);
-                        //double temp = (int)run_sequence.get(0) - first_start_time;
-                        //graph.getViewport().setMaxX(temp);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -177,52 +210,71 @@ public class StatisticsPageActivity extends AppCompatActivity
                         parse = parse.replace("\\", "");
                         parse = parse.replaceAll("^\"|\"$", "");
                         response = new JSONObject(parse);
-                        Calendar calendar = Calendar.getInstance();
-                        calendar.set(Calendar.MILLISECONDS_IN_DAY, 0); // Go to the beginning of the day
-                        Date today = calendar.getTime(); // Current time in seconds
-                        int i = 0;
-                        Date start_date;
-                        Date end_date;
+                        // Parse run times into a more easily readable format
                         JSONArray link_sequence;
-                        boolean done = false;
-                        // Count the systems the user had at 7 days ago
-                        for (; i < response.length() && !done;) {
+                        Calendar calendar = Calendar.getInstance();
+                        Calendar calendar_start = Calendar.getInstance();
+                        Calendar calendar_end = Calendar.getInstance();
+                        calendar_start.set(Calendar.MILLISECONDS_IN_DAY, 0);
+                        calendar_end.set(Calendar.MILLISECONDS_IN_DAY, 0);
+                        long event_times[][] = new long[response.length()][2];
+                        for (int i = 0; i < response.length(); i++) {
                             link_sequence = response.getJSONArray(String.valueOf(i));
-                            end_date = new Date((int)link_sequence.get(9), (int)link_sequence.get(10), (int)link_sequence.get(11), (int)link_sequence.get(12), (int)link_sequence.get(13));
-                            if (end_date.getTime() > today.getTime()) {
-                                done = true;
-                            } else {
-                                i++;
-                            }
+                            calendar_start.set((int)link_sequence.get(4), (int)link_sequence.get(5), (int)link_sequence.get(6), (int)link_sequence.get(7), (int)link_sequence.get(8));
+                            calendar_end.set((int)link_sequence.get(9), (int)link_sequence.get(10), (int)link_sequence.get(11), (int)link_sequence.get(12), (int)link_sequence.get(13));
+
+                            event_times[i][0] = calendar_start.getTimeInMillis() / 1000;
+                            event_times[i][1] = calendar_end.getTimeInMillis() / 1000;
                         }
-                        future_point = new DataPoint[response.length() - i];
-                        Date next_day = new Date(today.getTime() + 86400000);
+
+                        boolean done = false;
+                        int i = 0;
+                        calendar.set(Calendar.MILLISECONDS_IN_DAY, 0);
+                        long current_day = calendar.getTimeInMillis() / 1000;
+                        long max_day = current_day + 691200; // Seven days in the future
+                        // Find the next up coming event
+                        for (; i < response.length() && !done;) {
+                            if (event_times[i][0] < current_day)
+                                i++;
+                            else
+                                done = true;
+                        }
+                        done = false;
+
+                        // Calculate future runtimes
+                        current_day += 86400;
+                        int day = 0;
                         long total_run_time = 0;
-                        int day_count = 0;
-                        calendar.set(Calendar.SECOND, 0);
-                        for (; i < response.length();) {
-                            link_sequence = response.getJSONArray(String.valueOf(i));
-                            calendar.set((int)link_sequence.get(4), (int)link_sequence.get(5), (int)link_sequence.get(6), (int)link_sequence.get(7), (int)link_sequence.get(8));
-                            start_date = calendar.getTime();
-                            calendar.set((int)link_sequence.get(9), (int)link_sequence.get(10), (int)link_sequence.get(11), (int)link_sequence.get(12), (int)link_sequence.get(13));
-                            end_date = calendar.getTime();
-                            if (start_date.getTime() < next_day.getTime()) {
-                                total_run_time += (end_date.getTime() - start_date.getTime()) / 60000; // 60 seconds to get a minute
+                        DataPoint[] data = new DataPoint[8];
+                        for(;i < response.length() && !done;) {
+                            if (event_times[i][0] >= max_day)
+                                done = true;
+                            else if (event_times[i][0] < current_day) {
+                                total_run_time += event_times[i][1] - event_times[i][0]; // Accumulate length of runtimes for the day
                                 i++;
                             }
                             else {
-                                future_point[day_count] = new DataPoint(day_count, total_run_time);
-                                day_count++;
-                                next_day.setTime(next_day.getTime() + 86400000); // Move a day ahead
+                                // Save accumulated runtimes for the day and move to the next day
+                                total_run_time += event_times[i][1] - event_times[i][0]; // Accumulate length of runtimes for the day
+                                data[day] = new DataPoint(day, total_run_time);
+                                day++;
+                                i++;
                             }
                         }
-                        //day_count++;
-                        //system_point[day_count + 7] = new DataPoint(day_count, total_systems);
-                        DataPoint []insert = new DataPoint[day_count];
-                        for (int j = 0; j < day_count; j++)
-                            insert[j] = future_point[j];
+                        for(;day < 8; day++) {
+                            data[day] = new DataPoint(day, total_run_time);
+                        }
                         mFutureWaterUsageGraph.removeAllSeries();
-                        LineGraphSeries<DataPoint> runtime_series = new LineGraphSeries<>(insert);
+                        LineGraphSeries<DataPoint> runtime_series = new LineGraphSeries<>(data);
+                        mFutureWaterUsageGraph.getViewport().setYAxisBoundsManual(true);
+                        mFutureWaterUsageGraph.getViewport().setMinY(0);
+                        if (total_run_time < 100) {
+                            mFutureWaterUsageGraph.getViewport().setMaxY(100);
+                        }
+                        else {
+                            // Add small buffer above max datapoint
+                            mFutureWaterUsageGraph.getViewport().setMaxY(total_run_time + (total_run_time * 0.1));
+                        }
                         mFutureWaterUsageGraph.addSeries(runtime_series);
                         runtime_series.setColor(Color.RED);
                     } catch (JSONException e) {
@@ -237,7 +289,9 @@ public class StatisticsPageActivity extends AppCompatActivity
                         parse = parse.replaceAll("^\"|\"$", "");
                         response = new JSONObject(parse);
                         Calendar calendar = Calendar.getInstance();
-                        long start_time = (calendar.getTimeInMillis() - 604800000) / 1000; // Seven days in seconds to go back one week into the past
+                        calendar.setTimeZone(TimeZone.GMT_ZONE);
+                        calendar.set(Calendar.MILLISECONDS_IN_DAY, 0);
+                        long start_time = (calendar.getTimeInMillis() - 518400000) / 1000; // Seven days in seconds to go back one week into the past
                         long new_day = start_time;
                         int link_time = 0;
                         int total_systems = 0;
@@ -263,10 +317,13 @@ public class StatisticsPageActivity extends AppCompatActivity
                             }
                         }
                         system_point[day_count + 7] = new DataPoint(day_count, total_systems);
+                        // Moves from counting all active systems as of the beginning of one week ago
+                        // to counting systems by day
+                        new_day+= 86400;
 
                         for (; i < response.length();) {
                             link_sequence = response.getJSONArray(String.valueOf(i));
-                            if ((int)link_sequence.get(3) > new_day + 86400 || (int)link_sequence.get(4) > new_day + 86400) {
+                            if ((int)link_sequence.get(3) > new_day || (int)link_sequence.get(4) > new_day) {
                                 new_day += 86400; // Move day one more ahead
                                 day_count++;
                                 system_point[day_count + 7] = new DataPoint(day_count, total_systems);
@@ -274,7 +331,6 @@ public class StatisticsPageActivity extends AppCompatActivity
                                 link_time = (int) link_sequence.get(3); // System was added
                                 if (link_time == 0) { // System was removed
                                     total_systems--;
-                                    link_time = (int) link_sequence.get(4);
                                 } else {
                                     total_systems++;
                                 }
@@ -283,6 +339,10 @@ public class StatisticsPageActivity extends AppCompatActivity
                         }
                         day_count++;
                         system_point[day_count + 7] = new DataPoint(day_count, total_systems);
+                        // Ensure graph has 8 datapoints
+                        for(;day_count <= 0; day_count++) {
+                            system_point[day_count + 7] = new DataPoint(day_count, total_systems);
+                        }
                         mSystemsConnectedToAccountGraph.removeAllSeries();
                         PointsGraphSeries<DataPoint> system_series = new PointsGraphSeries<>(system_point);
                         mSystemsConnectedToAccountGraph.addSeries(system_series);
@@ -320,35 +380,6 @@ public class StatisticsPageActivity extends AppCompatActivity
         }
     }
 
-    /*public void updateGraph(JSONObject response) throws JSONException {
-        String parse = response.getString("body");
-        parse = parse.replace("\\", "");
-        parse = parse.replaceAll("^\"|\"$", "");
-        response = new JSONObject(parse);
-        JSONArray run_sequence = response.getJSONArray("0");
-        int first_start_time = (int)run_sequence.get(0);
-
-        GraphView graph = findViewById(R.id.graph);
-        DataPoint[] data = new DataPoint[response.length()];
-        int total = 0;
-        for (int i = 0; i < response.length(); i++) {
-            run_sequence = response.getJSONArray(String.valueOf(i));
-            total += ((int)run_sequence.get(1) - first_start_time) - ((int)run_sequence.get(0) - first_start_time);
-
-            data[i] = new DataPoint(i, total);
-            //data[i] = new DataPoint((int)run_sequence.get(0) - first_start_time, total);
-        }
-        LineGraphSeries<DataPoint> series = new LineGraphSeries<>(data);
-        graph.removeAllSeries();
-        graph.addSeries(series);
-        graph.getViewport().setXAxisBoundsManual(true);
-
-        graph.getViewport().setMaxX(data.length - 1);
-        //double temp = (int)run_sequence.get(0) - first_start_time;
-        //graph.getViewport().setMaxX(temp);
-
-        graph.setTitle("Total system runtime");
-    }*/
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -365,10 +396,6 @@ public class StatisticsPageActivity extends AppCompatActivity
 
     public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
         currentSystemID = cObject.getSystemID(mSystemStatisticsSpinner.getItemAtPosition(pos).toString());
-        //updateGraph(PAST_WATER);
-        //updateGraph(FUTURE_WATER);
-        //updateGraph(SYSTEMS_CONNECTED);
-        //updateGraph(CURRENT_WEATHER);
         showProgress(true);
         mNOAATask = new NOAATemperatureTask(cObject);
         mNOAATask.execute((Void) null);
