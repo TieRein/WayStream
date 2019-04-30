@@ -129,10 +129,6 @@ public class StatisticsPageActivity extends AppCompatActivity
 
         mStatisticsView = findViewById(R.id.statistics_view);
         mProgressView = findViewById(R.id.statistics_progress);
-
-        //showProgress(true);
-        //mNOAATask = new NOAATemperatureTask(cObject);
-        //mNOAATask.execute((Void) null);
     }
 
     public void updateGraph(int graph) {
@@ -212,6 +208,7 @@ public class StatisticsPageActivity extends AppCompatActivity
                         response = new JSONObject(parse);
                         // Parse run times into a more easily readable format
                         JSONArray link_sequence;
+                        int is_automated = cObject.getSystem(currentSystemID).isAutomated ? 1 : 0;
                         Calendar calendar = Calendar.getInstance();
                         Calendar calendar_start = Calendar.getInstance();
                         Calendar calendar_end = Calendar.getInstance();
@@ -220,11 +217,13 @@ public class StatisticsPageActivity extends AppCompatActivity
                         long event_times[][] = new long[response.length()][2];
                         for (int i = 0; i < response.length(); i++) {
                             link_sequence = response.getJSONArray(String.valueOf(i));
-                            calendar_start.set((int)link_sequence.get(4), (int)link_sequence.get(5), (int)link_sequence.get(6), (int)link_sequence.get(7), (int)link_sequence.get(8));
-                            calendar_end.set((int)link_sequence.get(9), (int)link_sequence.get(10), (int)link_sequence.get(11), (int)link_sequence.get(12), (int)link_sequence.get(13));
+                            if ((int)link_sequence.get(14) == is_automated) {
+                                calendar_start.set((int) link_sequence.get(4), (int) link_sequence.get(5), (int) link_sequence.get(6), (int) link_sequence.get(7), (int) link_sequence.get(8));
+                                calendar_end.set((int) link_sequence.get(9), (int) link_sequence.get(10), (int) link_sequence.get(11), (int) link_sequence.get(12), (int) link_sequence.get(13));
 
-                            event_times[i][0] = calendar_start.getTimeInMillis() / 1000;
-                            event_times[i][1] = calendar_end.getTimeInMillis() / 1000;
+                                event_times[i][0] = calendar_start.getTimeInMillis() / 1000;
+                                event_times[i][1] = calendar_end.getTimeInMillis() / 1000;
+                            }
                         }
 
                         boolean done = false;
